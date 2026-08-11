@@ -431,6 +431,24 @@ export default function App() {
   }, [fetchUsage]);
 
   useEffect(() => {
+    const uuid = localStorage.getItem("aic_sync_uuid");
+    const budget = parseFloat(localStorage.getItem("aic_monthly"));
+    if (!uuid || !budget) return;
+    fetch(`/api/usage/${uuid}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.budget == null && budget) {
+          fetch(`/api/usage/${uuid}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ budget }),
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const teamId = localStorage.getItem("aic_team_id");
     if (!teamId) return;
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
