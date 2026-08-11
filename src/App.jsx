@@ -200,7 +200,28 @@ function TeamView({ teamId }) {
   const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
-  function MemberRow({ m, i, accent, value, sub }) {
+  function MemberRow({ m, i, accent, value, sub, budgetRatio }) {
+    let bar;
+    if (budgetRatio != null) {
+      const pct = Math.min(budgetRatio * 100, 100);
+      const barColor = budgetRatio < 0.70 ? "#3ab87a"
+        : budgetRatio <= 0.80 ? "#4f6ef7"
+        : "#e05252";
+      bar = (
+        <div style={{ position: "relative", background: "#eef0ff", borderRadius: 6, height: 6, overflow: "visible" }}>
+          {/* 75% target marker */}
+          <div style={{ position: "absolute", left: "75%", top: -1, width: 2, height: 8, background: "#c0c8ff", borderRadius: 1, zIndex: 1 }} />
+          <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 6, transition: "width 0.3s" }} />
+        </div>
+      );
+    } else {
+      bar = (
+        <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
+          <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: `linear-gradient(90deg,${accent},${accent}99)`, borderRadius: 6 }} />
+        </div>
+      );
+    }
+
     return (
       <div style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -213,9 +234,7 @@ function TeamView({ teamId }) {
             {sub && <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{sub}</div>}
           </div>
         </div>
-        <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
-          <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: `linear-gradient(90deg,${accent},${accent}99)`, borderRadius: 6 }} />
-        </div>
+        {bar}
         <div style={{ fontSize: "0.65rem", color: "#aaa", marginTop: 4 }}>synced {timeAgo(m.usage.updated_at)}</div>
       </div>
     );
@@ -251,9 +270,10 @@ function TeamView({ teamId }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {byDailyBudget.map((m, i) => (
                   <MemberRow key={m.uuid} m={m} i={i}
-                    accent={m.ratio > 1 ? "#e05252" : "#e0953a"}
+                    accent={m.ratio < 0.70 ? "#3ab87a" : m.ratio <= 0.80 ? "#4f6ef7" : "#e05252"}
                     value={`${m.actualPerDay.toFixed(1)} / ${m.allowedPerDay.toFixed(1)}`}
-                    sub="actual / allowed per day" />
+                    sub="actual / allowed per day"
+                    budgetRatio={m.ratio} />
                 ))}
               </div>
             </div>
