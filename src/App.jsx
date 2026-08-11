@@ -24,6 +24,14 @@ function daysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
 
+function timeAgo(iso) {
+  const sec = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  return `${Math.floor(sec / 86400)}d ago`;
+}
+
 function totalWorkdays(year, month) {
   return countWorkdays(year, month, daysInMonth(year, month));
 }
@@ -293,7 +301,7 @@ export default function App() {
               </div>
               <div style={statBox}>
                 <div>Last synced</div>
-                <div style={{ fontWeight: 700, color: "#333" }}>{new Date(syncData.updated_at).toLocaleTimeString()}</div>
+                <div style={{ fontWeight: 700, color: "#333" }}>{timeAgo(syncData.updated_at)}</div>
               </div>
             </div>
           )}
