@@ -1,5 +1,5 @@
 #!/bin/bash
-DB="$HOME/.copilot/data.db"
+DB="$HOME/.copilot/session-store.db"
 UUID_FILE="$HOME/.config/aic/uuid"
 API="https://aic-jade.vercel.app/api/usage"
 
@@ -17,11 +17,10 @@ RESULT=$(sqlite3 "$DB" "
 SELECT
   strftime('%Y-%m', created_at),
   ROUND(SUM(total_nano_aiu) / 1000000000.0, 2),
-  SUM(total_input_tokens),
-  SUM(total_output_tokens)
-FROM sessions
-WHERE total_nano_aiu > 0
-  AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+  SUM(input_tokens),
+  SUM(output_tokens)
+FROM assistant_usage_events
+WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
 GROUP BY strftime('%Y-%m', created_at);
 " -separator "|")
 
