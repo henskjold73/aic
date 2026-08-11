@@ -605,32 +605,54 @@ export default function App() {
         </div>
 
         {/* Calendar grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3 }}>
-          {cells.map((day, idx) => {
-            if (day === null) return <div key={`e${idx}`} />;
-            const weekend = isWeekend(viewYear, viewMonth, day);
-            const isToday = isCurrentMonth && day === today.getDate();
-            const isPast = isCurrentMonth ? day < today.getDate() : isPastMonth;
-            const wdNum = countWorkdays(viewYear, viewMonth, day);
-            const pct = weekend ? null : ((wdNum / totalWD) * 100).toFixed(1);
+        {(() => {
+          const budget = parseFloat(monthlyAIC);
+          const showBurn = aicInsight && isCurrentMonth && budget > 0;
+          const { dailyBurnRate } = aicInsight || {};
+          const runOutDay = showBurn ? Math.ceil(budget / dailyBurnRate) : null;
 
-            let bg = weekend ? "#fafafa" : "#f7f8ff";
-            let border = weekend ? "#f0f0f0" : "#e8eaff";
-            let numColor = weekend ? "#bbb" : "#222";
-            let pctColor = isPast ? "#4f6ef7" : "#a0aaff";
+          return (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3 }}>
+              {cells.map((day, idx) => {
+                if (day === null) return <div key={`e${idx}`} />;
+                const weekend = isWeekend(viewYear, viewMonth, day);
+                const isToday = isCurrentMonth && day === today.getDate();
+                const isPast = isCurrentMonth ? day < today.getDate() : isPastMonth;
+                const isRunOut = runOutDay !== null && day === runOutDay && runOutDay <= totalDays;
 
-            if (isToday) { bg = "#4f6ef7"; border = "#4f6ef7"; numColor = "#fff"; pctColor = "#fff"; }
+                let pctLabel, pctColor;
+                if (showBurn && !weekend) {
+                  const projPct = (dailyBurnRate * day / budget) * 100;
+                  pctLabel = `${projPct.toFixed(0)}%`;
+                  pctColor = isToday ? "#fff" : projPct >= 100 ? "#e05252" : isPast ? "#4f6ef7" : "#a0aaff";
+                } else if (!showBurn && !weekend) {
+                  const wdNum = countWorkdays(viewYear, viewMonth, day);
+                  pctLabel = `${((wdNum / totalWD) * 100).toFixed(1)}%`;
+                  pctColor = isToday ? "#fff" : isPast ? "#4f6ef7" : "#a0aaff";
+                }
 
-            return (
-              <div key={day} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "4px 2px" }}>
-                <div style={{ fontSize: "0.82rem", fontWeight: 600, color: numColor, lineHeight: 1 }}>{day}</div>
-                {pct && (
-                  <div style={{ fontSize: "0.62rem", fontWeight: 500, color: pctColor, lineHeight: 1 }}>{pct}%</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                let bg = weekend ? "#fafafa" : "#f7f8ff";
+                let border = weekend ? "1px solid #f0f0f0" : "1px solid #e8eaff";
+                let numColor = weekend ? "#bbb" : "#222";
+
+                if (isRunOut && !isToday) { bg = "#fff5f5"; border = "2px solid #e05252"; }
+                if (isToday) { bg = "#4f6ef7"; border = "1px solid #4f6ef7"; numColor = "#fff"; }
+
+                return (
+                  <div key={day} style={{ background: bg, border, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "4px 2px" }}>
+                    <div style={{ fontSize: "0.82rem", fontWeight: 600, color: numColor, lineHeight: 1 }}>{day}</div>
+                    {pctLabel && (
+                      <div style={{ fontSize: "0.62rem", fontWeight: 500, color: pctColor, lineHeight: 1 }}>{pctLabel}</div>
+                    )}
+                    {isRunOut && !isToday && (
+                      <div style={{ fontSize: "0.52rem", color: "#e05252", fontWeight: 700, lineHeight: 1 }}>out</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* AIC Panel */}
         <div style={{ marginTop: 14, background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
