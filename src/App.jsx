@@ -628,17 +628,6 @@ export default function App() {
                 const isPast = isCurrentMonth ? day < today.getDate() : isPastMonth;
                 const isRunOut = runOutDay !== null && day === runOutDay && runOutDay <= totalDays;
 
-                let pctLabel, pctColor;
-                if (showBurn && !weekend) {
-                  const projPct = (dailyBurnRate * day / budget) * 100;
-                  pctLabel = `${projPct.toFixed(0)}%`;
-                  pctColor = isToday ? "#fff" : projPct >= 100 ? "#e05252" : isPast ? "#4f6ef7" : "#a0aaff";
-                } else if (!showBurn && !weekend) {
-                  const wdNum = countWorkdays(viewYear, viewMonth, day);
-                  pctLabel = `${((wdNum / totalWD) * 100).toFixed(1)}%`;
-                  pctColor = isToday ? "#fff" : isPast ? "#4f6ef7" : "#a0aaff";
-                }
-
                 let bg = weekend ? "#fafafa" : "#f7f8ff";
                 let border = weekend ? "1px solid #f0f0f0" : "1px solid #e8eaff";
                 let numColor = weekend ? "#bbb" : "#222";
@@ -646,14 +635,32 @@ export default function App() {
                 if (isRunOut && !isToday) { bg = "#fff5f5"; border = "2px solid #e05252"; }
                 if (isToday) { bg = "#4f6ef7"; border = "1px solid #4f6ef7"; numColor = "#fff"; }
 
+                // Target %: linear daily — where you should be by this day
+                const targetPct = (day / totalDays) * 100;
+                // Actual %: where you'll be at current burn rate
+                const actualPct = showBurn ? (dailyBurnRate * day / budget) * 100 : null;
+
+                const targetLabel = !weekend ? `${targetPct.toFixed(0)}%` : null;
+                const actualLabel = showBurn && !weekend ? `${Math.min(actualPct, 999).toFixed(0)}%` : null;
+
+                const targetColor = isToday ? "rgba(255,255,255,0.7)" : "#aaa";
+                const actualColor = isToday ? "#fff"
+                  : actualPct == null ? null
+                  : actualPct > targetPct + 5 ? "#e05252"
+                  : actualPct < targetPct - 5 ? "#3ab87a"
+                  : "#4f6ef7";
+
                 return (
-                  <div key={day} style={{ background: bg, border, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "4px 2px" }}>
+                  <div key={day} style={{ background: bg, border, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px" }}>
                     <div style={{ fontSize: "0.82rem", fontWeight: 600, color: numColor, lineHeight: 1 }}>{day}</div>
-                    {pctLabel && (
-                      <div style={{ fontSize: "0.62rem", fontWeight: 500, color: pctColor, lineHeight: 1 }}>{pctLabel}</div>
+                    {targetLabel && (
+                      <div style={{ fontSize: "0.58rem", fontWeight: 500, color: targetColor, lineHeight: 1 }}>{targetLabel}</div>
+                    )}
+                    {actualLabel && (
+                      <div style={{ fontSize: "0.62rem", fontWeight: 700, color: actualColor, lineHeight: 1 }}>{actualLabel}</div>
                     )}
                     {isRunOut && !isToday && (
-                      <div style={{ fontSize: "0.52rem", color: "#e05252", fontWeight: 700, lineHeight: 1 }}>out</div>
+                      <div style={{ fontSize: "0.5rem", color: "#e05252", fontWeight: 700, lineHeight: 1 }}>out</div>
                     )}
                   </div>
                 );
