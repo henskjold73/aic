@@ -25,7 +25,7 @@ print(f'{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:]}')
 echo "$UUID" > "$UUID_FILE"
 
 # Download update script from repo
-curl -sL "$RAW/update-usage.sh" -o "$SCRIPT_DEST"
+curl -sL "$RAW/update-usage.sh?t=$(date +%s)" -o "$SCRIPT_DEST"
 chmod +x "$SCRIPT_DEST"
 
 # Install launchd plist (macOS only)

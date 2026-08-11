@@ -10,7 +10,8 @@ $uuid = [System.Guid]::NewGuid().ToString()
 Set-Content -Path $UUID_FILE -Value $uuid
 
 # Download update script
-Invoke-WebRequest "$RAW/update-usage.ps1" -OutFile $SCRIPT_DEST
+$ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+Invoke-WebRequest "$RAW/update-usage.ps1?t=$ts" -OutFile $SCRIPT_DEST
 
 # Create scheduled task (hourly)
 $action = New-ScheduledTaskAction `

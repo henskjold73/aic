@@ -36,6 +36,210 @@ function totalWorkdays(year, month) {
   return countWorkdays(year, month, daysInMonth(year, month));
 }
 
+// ── Team components ──────────────────────────────────────────────
+
+function TeamCreate() {
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [teamId, setTeamId] = useState(null);
+
+  async function create() {
+    setLoading(true);
+    const r = await fetch("/api/team", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name || "My Team" }),
+    });
+    const data = await r.json();
+    setTeamId(data.id);
+    setLoading(false);
+    localStorage.setItem("aic_team_id", data.id);
+  }
+
+  const joinUrl = teamId ? `${window.location.origin}/team/${teamId}/join` : null;
+
+  return (
+    <div style={pageWrap}>
+      <div style={card}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>Create a team</div>
+        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 16 }}>Share the join link with your coworkers — everyone adds their sync UUID to the team.</div>
+        {!teamId ? (
+          <>
+            <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 12 }}>
+              Team name
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Platform team" style={{ ...inputStyle, marginTop: 4 }} />
+            </label>
+            <button onClick={create} disabled={loading} style={btnPrimary}>{loading ? "Creating..." : "Create team"}</button>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: 6 }}>Join link — share this:</div>
+            <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", fontFamily: "monospace", fontSize: "0.75rem", color: "#333", wordBreak: "break-all", marginBottom: 12 }}>{joinUrl}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => navigator.clipboard.writeText(joinUrl)} style={btnSecondary}>Copy link</button>
+              <button onClick={() => window.location.href = `/team/${teamId}`} style={btnPrimary}>View team</button>
+            </div>
+          </>
+        )}
+        <div style={{ marginTop: 12 }}>
+          <a href="/" style={{ fontSize: "0.75rem", color: "#aaa" }}>Back</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamJoin({ teamId }) {
+  const [name, setName] = useState("");
+  const [uuid, setUuid] = useState(localStorage.getItem("aic_sync_uuid") ?? "");
+  const [status, setStatus] = useState(null);
+  const [teamName, setTeamName] = useState("");
+
+  async function join() {
+    if (!UUID_RE.test(uuid.trim())) { setStatus("bad_uuid"); return; }
+    if (!name.trim()) { setStatus("bad_name"); return; }
+    const r = await fetch(`/api/team/${teamId}/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uuid: uuid.trim(), name: name.trim() }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      setTeamName(data.team_name);
+      setStatus("joined");
+      localStorage.setItem("aic_sync_uuid", uuid.trim());
+      localStorage.setItem("aic_team_id", teamId);
+    } else {
+      setStatus("error");
+    }
+  }
+
+  if (status === "joined") return (
+    <div style={pageWrap}>
+      <div style={card}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 8 }}>Joined {teamName}!</div>
+        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 16 }}>Your usage will appear in the team view as soon as your sync script runs.</div>
+        <button onClick={() => window.location.href = `/team/${teamId}`} style={btnPrimary}>View team</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={pageWrap}>
+      <div style={card}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>Join team</div>
+        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 16 }}>Enter your name and sync UUID to add yourself to the team.</div>
+        <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 10 }}>
+          Your name
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morgan" style={{ ...inputStyle, marginTop: 4 }} />
+        </label>
+        <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 12 }}>
+          Sync UUID
+          <input value={uuid} onChange={e => setUuid(e.target.value)} placeholder="xxxxxxxx-xxxx-7xxx-xxxx-xxxxxxxxxxxx" style={{ ...inputStyle, marginTop: 4, fontFamily: "monospace", fontSize: "0.8rem" }} />
+        </label>
+        {status === "bad_uuid" && <div style={{ fontSize: "0.75rem", color: "#e05252", marginBottom: 8 }}>Invalid UUID — run the install script to get yours.</div>}
+        {status === "bad_name" && <div style={{ fontSize: "0.75rem", color: "#e05252", marginBottom: 8 }}>Please enter your name.</div>}
+        {status === "error" && <div style={{ fontSize: "0.75rem", color: "#e05252", marginBottom: 8 }}>Something went wrong — check the team link is correct.</div>}
+        <button onClick={join} style={btnPrimary}>Join team</button>
+        <div style={{ marginTop: 12 }}>
+          <a href="/" style={{ fontSize: "0.75rem", color: "#aaa" }}>Back</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamView({ teamId }) {
+  const [team, setTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+
+  useEffect(() => {
+    fetch(`/api/team/${teamId}`)
+      .then(r => r.json())
+      .then(data => { setTeam(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [teamId]);
+
+  if (loading) return <div style={{ ...pageWrap, justifyContent: "center" }}><div style={{ color: "#aaa", fontSize: "0.9rem" }}>Loading...</div></div>;
+  if (!team || team.error) return <div style={pageWrap}><div style={card}><div style={{ color: "#e05252" }}>Team not found.</div><a href="/" style={{ fontSize: "0.75rem", color: "#aaa", display: "block", marginTop: 12 }}>Back</a></div></div>;
+
+  const members = team.members
+    .map(m => ({ ...m, aiu: m.usage?.month === currentMonth ? m.usage.aiu : null }))
+    .sort((a, b) => (b.aiu ?? -1) - (a.aiu ?? -1));
+
+  const totalAIU = members.reduce((s, m) => s + (m.aiu ?? 0), 0);
+  const maxAIU = Math.max(...members.map(m => m.aiu ?? 0), 1);
+  const joinUrl = `${window.location.origin}/team/${teamId}/join`;
+
+  return (
+    <div style={pageWrap}>
+      <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 520, color: "#1a1a2e" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: "1.3rem", fontWeight: 700 }}>{team.name}</div>
+            <div style={{ fontSize: "0.75rem", color: "#aaa" }}>{members.length} member{members.length !== 1 ? "s" : ""} · {new Date().toLocaleString("default", { month: "long", year: "numeric" })}</div>
+          </div>
+          <a href="/" style={{ fontSize: "0.75rem", color: "#aaa", textDecoration: "none" }}>Back</a>
+        </div>
+
+        {/* Members */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+          {members.map((m, i) => (
+            <div key={m.uuid} style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#4f6ef7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+                  <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
+                </div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#4f6ef7" }}>
+                  {m.aiu != null ? `${m.aiu.toFixed(1)} AIU` : <span style={{ color: "#ccc", fontWeight: 400 }}>no data</span>}
+                </div>
+              </div>
+              {m.aiu != null && (
+                <>
+                  <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
+                    <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: "linear-gradient(90deg,#4f6ef7,#7b8ff7)", borderRadius: 6 }} />
+                  </div>
+                  <div style={{ fontSize: "0.65rem", color: "#aaa", marginTop: 4 }}>
+                    synced {timeAgo(m.usage.updated_at)}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div style={{ background: "#fff", borderRadius: 10, padding: "10px 14px", border: "1px solid #e8eaff", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: "0.78rem", color: "#666" }}>Team total this month</div>
+          <div style={{ fontSize: "1rem", fontWeight: 700, color: "#4f6ef7" }}>{totalAIU.toFixed(1)} AIU</div>
+        </div>
+
+        {/* Invite */}
+        <div style={{ background: "#f4f5fb", borderRadius: 10, padding: "10px 14px", border: "1px solid #e8eaff" }}>
+          <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 4 }}>Invite link</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{joinUrl}</div>
+            <button onClick={() => navigator.clipboard.writeText(joinUrl)} style={btnSecondary}>Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ position: "fixed", bottom: 8, right: 10, fontSize: "0.6rem", color: "#999", fontFamily: "monospace", pointerEvents: "none" }}>
+        {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
+      </div>
+    </div>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────
+const pageWrap = { minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" };
+const card = { background: "#fff", borderRadius: 14, padding: "28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(79,110,247,0.1)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+const btnPrimary = { padding: "8px 18px", background: "#4f6ef7", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer", width: "100%" };
+const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6ef7", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" };
+
+// ── Auto modal ────────────────────────────────────────────────────
 function AutoModal({ onClose }) {
   const [input, setInput] = useState(localStorage.getItem("aic_sync_uuid") ?? "");
   const [status, setStatus] = useState(null);
@@ -117,7 +321,16 @@ function AutoModal({ onClose }) {
 
 export default function App() {
   const today = new Date();
-  const isAutoRoute = window.location.pathname === "/auto";
+  const path = window.location.pathname;
+  const isAutoRoute = path === "/auto";
+
+  // Team routing
+  const teamCreateMatch = path === "/team";
+  const teamJoinMatch = path.match(/^\/team\/([^/]+)\/join$/);
+  const teamViewMatch = path.match(/^\/team\/([^/]+)$/);
+  if (teamCreateMatch) return <TeamCreate />;
+  if (teamJoinMatch) return <TeamJoin teamId={teamJoinMatch[1]} />;
+  if (teamViewMatch) return <TeamView teamId={teamViewMatch[1]} />;
 
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -219,7 +432,10 @@ export default function App() {
           <div style={{ fontSize: "1.3rem", fontWeight: 700, letterSpacing: -0.5 }}>
             {MONTH_NAMES[viewMonth]} {viewYear}
           </div>
-          <button onClick={nextMonth} style={navBtn}>→</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <a href="/team" style={{ ...navBtn, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600, color: "#4f6ef7" }}>Team</a>
+            <button onClick={nextMonth} style={navBtn}>→</button>
+          </div>
         </div>
 
         {/* Workday progress bar */}
