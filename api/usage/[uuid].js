@@ -22,11 +22,13 @@ module.exports = async function handler(req, res) {
     return r.json();
   }
 
-  // POST — full replace (from sync script)
+  // POST — merge with existing to preserve fields like budget
   if (req.method === 'POST') {
     try {
-      const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-      await put(blobPath, body, { access: 'public', addRandomSuffix: false, contentType: 'application/json' });
+      const incoming = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const existing = await getExisting();
+      const merged = { ...existing, ...incoming };
+      await put(blobPath, JSON.stringify(merged), { access: 'public', addRandomSuffix: false, contentType: 'application/json' });
       return res.status(200).json({ ok: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });
