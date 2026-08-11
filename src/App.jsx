@@ -300,11 +300,10 @@ export default function App() {
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
 
-    </div>
-
       <div style={{ position: "fixed", bottom: 8, right: 10, fontSize: "0.6rem", color: "#ccc", fontFamily: "monospace", pointerEvents: "none" }}>
         {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
       </div>
+    </div>
   );
 }
 
