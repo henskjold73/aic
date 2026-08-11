@@ -1,0 +1,234 @@
+import { useState, useMemo } from "react";
+
+const MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+function isWeekend(year, month, day) {
+  const d = new Date(year, month, day).getDay();
+  return d === 0 || d === 6;
+}
+
+function countWorkdays(year, month, upToDay) {
+  let count = 0;
+  for (let d = 1; d <= upToDay; d++) {
+    if (!isWeekend(year, month, d)) count++;
+  }
+  return count;
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function totalWorkdays(year, month) {
+  return countWorkdays(year, month, daysInMonth(year, month));
+}
+
+export default function App() {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [monthlyAIC, setMonthlyAIC] = useState(() => localStorage.getItem("aic_monthly") ?? "");
+  const [usedAIC, setUsedAIC] = useState(() => localStorage.getItem("aic_used") ?? "");
+
+  function updateMonthlyAIC(val) { setMonthlyAIC(val); localStorage.setItem("aic_monthly", val); }
+  function updateUsedAIC(val) { setUsedAIC(val); localStorage.setItem("aic_used", val); }
+
+  const aicInsight = useMemo(() => {
+    const budget = parseFloat(monthlyAIC);
+    const used = parseFloat(usedAIC);
+    if (!budget || !used || isNaN(budget) || isNaN(used)) return null;
+
+    const dayOfMonth = today.getDate();
+    const totalDays = daysInMonth(today.getFullYear(), today.getMonth());
+    const daysLeft = totalDays - dayOfMonth;
+    const daysGone = dayOfMonth;
+
+    const dailyBurnRate = used / daysGone;
+    const projected = dailyBurnRate * totalDays;
+    const remaining = budget - used;
+    const allowedDailyFromNow = daysLeft > 0 ? remaining / daysLeft : 0;
+    const overBudget = projected > budget;
+    const pctUsed = (used / budget) * 100;
+    const expectedPctUsed = (daysGone / totalDays) * 100;
+    const burnStatus = pctUsed - expectedPctUsed;
+
+    return { dailyBurnRate, projected, remaining, allowedDailyFromNow, overBudget, pctUsed, burnStatus };
+  }, [monthlyAIC, usedAIC]);
+
+  const totalDays = daysInMonth(viewYear, viewMonth);
+  const totalWD = totalWorkdays(viewYear, viewMonth);
+
+  const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+  const isPastMonth =
+    viewYear < today.getFullYear() ||
+    (viewYear === today.getFullYear() && viewMonth < today.getMonth());
+
+  let wdGone = isPastMonth
+    ? totalWD
+    : isCurrentMonth
+    ? countWorkdays(viewYear, viewMonth, today.getDate())
+    : 0;
+
+  const pctGone = totalWD > 0 ? (wdGone / totalWD) * 100 : 0;
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  }
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" }}>
+      <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 480, color: "#1a1a2e" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <button onClick={prevMonth} style={navBtn}>←</button>
+          <div style={{ fontSize: "1.3rem", fontWeight: 700, letterSpacing: -0.5 }}>
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </div>
+          <button onClick={nextMonth} style={navBtn}>→</button>
+        </div>
+
+        {/* Workday progress bar */}
+        <div style={{ fontSize: "0.75rem", color: "#888", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <span>{wdGone} of {totalWD} workdays elapsed</span>
+          <span style={{ fontWeight: 600, color: "#4f6ef7" }}>{pctGone.toFixed(1)}%</span>
+        </div>
+        <div style={{ background: "#eef0ff", borderRadius: 8, height: 7, marginBottom: 18, overflow: "hidden" }}>
+          <div style={{ width: `${pctGone}%`, height: "100%", background: "linear-gradient(90deg,#4f6ef7,#7b8ff7)", borderRadius: 8, transition: "width 0.3s" }} />
+        </div>
+
+        {/* Weekday labels */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, marginBottom: 4 }}>
+          {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d, i) => (
+            <div key={d} style={{ textAlign: "center", fontSize: "0.68rem", fontWeight: 600, color: i >= 5 ? "#ccc" : "#aaa", textTransform: "uppercase", padding: "2px 0" }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3 }}>
+          {cells.map((day, idx) => {
+            if (day === null) return <div key={`e${idx}`} />;
+            const weekend = isWeekend(viewYear, viewMonth, day);
+            const isToday = isCurrentMonth && day === today.getDate();
+            const isPast = isCurrentMonth ? day < today.getDate() : isPastMonth;
+            const wdNum = countWorkdays(viewYear, viewMonth, day);
+            const pct = weekend ? null : ((wdNum / totalWD) * 100).toFixed(1);
+
+            let bg = weekend ? "#fafafa" : "#f7f8ff";
+            let border = weekend ? "#f0f0f0" : "#e8eaff";
+            let numColor = weekend ? "#bbb" : "#222";
+            let pctColor = isPast ? "#4f6ef7" : "#a0aaff";
+
+            if (isToday) { bg = "#4f6ef7"; border = "#4f6ef7"; numColor = "#fff"; pctColor = "#fff"; }
+
+            return (
+              <div key={day} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: "4px 2px" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 600, color: numColor, lineHeight: 1 }}>{day}</div>
+                {pct && (
+                  <div style={{ fontSize: "0.62rem", fontWeight: 500, color: pctColor, lineHeight: 1 }}>{pct}%</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* AIC Panel */}
+        <div style={{ marginTop: 14, background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
+          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>AI Credits (AIC)</div>
+          <div style={{ display: "flex", gap: 10, marginBottom: aicInsight ? 12 : 0 }}>
+            <label style={{ flex: 1, fontSize: "0.75rem", color: "#666" }}>
+              Monthly budget
+              <input type="number" value={monthlyAIC} onChange={e => updateMonthlyAIC(e.target.value)} placeholder="e.g. 1000" style={inputStyle} />
+            </label>
+            <label style={{ flex: 1, fontSize: "0.75rem", color: "#666" }}>
+              Used so far
+              <input type="number" value={usedAIC} onChange={e => updateUsedAIC(e.target.value)} placeholder="e.g. 340" style={inputStyle} />
+            </label>
+          </div>
+
+          {aicInsight && (() => {
+            const { dailyBurnRate, projected, remaining, allowedDailyFromNow, overBudget, pctUsed, burnStatus } = aicInsight;
+            const statusColor = overBudget ? "#e05252" : burnStatus > 10 ? "#e0953a" : "#3ab87a";
+            const statusLabel = overBudget ? "⚠️ Over budget on current pace" : burnStatus > 10 ? "🟠 Burning faster than expected — ease up" : "✅ On track";
+            const barPct = Math.min(pctUsed, 100);
+            return (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#888", marginBottom: 3 }}>
+                  <span>{parseFloat(usedAIC).toFixed(0)} / {parseFloat(monthlyAIC).toFixed(0)} used</span>
+                  <span style={{ fontWeight: 600, color: statusColor }}>{pctUsed.toFixed(1)}%</span>
+                </div>
+                <div style={{ background: "#e8eaff", borderRadius: 8, height: 7, marginBottom: 10, overflow: "hidden" }}>
+                  <div style={{ width: `${barPct}%`, height: "100%", background: overBudget ? "#e05252" : burnStatus > 10 ? "#e0953a" : "#3ab87a", borderRadius: 8, transition: "width 0.3s" }} />
+                </div>
+                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: statusColor, marginBottom: 10 }}>{statusLabel}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, fontSize: "0.72rem", color: "#666" }}>
+                  <div style={statBox}><div>Daily burn</div><div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#333" }}>{dailyBurnRate.toFixed(1)}</div></div>
+                  <div style={statBox}><div>Projected total</div><div style={{ fontSize: "0.95rem", fontWeight: 700, color: overBudget ? "#e05252" : "#333" }}>{projected.toFixed(0)}</div></div>
+                  <div style={statBox}><div>Max/day left</div><div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#3ab87a" }}>{allowedDailyFromNow.toFixed(1)}</div></div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Summary */}
+        <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 14px", display: "flex", gap: 20, fontSize: "0.78rem", color: "#666", border: "1px solid #e8eaff" }}>
+          {[["Total workdays", totalWD], ["Elapsed", wdGone], ["Remaining", totalWD - wdGone], ["Progress", pctGone.toFixed(1) + "%"]].map(([label, val]) => (
+            <div key={label}>
+              <div>{label}</div>
+              <div style={{ fontSize: "1rem", fontWeight: 700, color: "#4f6ef7" }}>{val}</div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+const navBtn = {
+  background: "#eef0ff",
+  border: "none",
+  borderRadius: 8,
+  width: 34,
+  height: 34,
+  cursor: "pointer",
+  fontSize: "1rem",
+  color: "#333",
+};
+
+const inputStyle = {
+  display: "block",
+  width: "100%",
+  marginTop: 4,
+  padding: "6px 8px",
+  borderRadius: 7,
+  border: "1px solid #dde0f5",
+  fontSize: "0.85rem",
+  background: "#f7f8ff",
+  color: "#1a1a2e",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const statBox = {
+  background: "#f7f8ff",
+  border: "1px solid #e8eaff",
+  borderRadius: 8,
+  padding: "6px 10px",
+};
