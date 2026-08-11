@@ -23,7 +23,7 @@ Register-ScheduledTask -TaskName "aic-usage-sync" -Action $action -Trigger $trig
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-Write-Host "  aic sync installed v"
+Write-Host "  aic sync installed"
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Write-Host ""
 Write-Host "  Your sync UUID:"

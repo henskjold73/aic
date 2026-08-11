@@ -6,19 +6,26 @@ if (-not (Test-Path $DB)) {
     Write-Error "[aic] DB not found: $DB"; exit 1
 }
 if (-not (Test-Path $UUID_FILE)) {
-    Write-Error "[aic] UUID not found — run install-sync.ps1 first"; exit 1
+    Write-Error "[aic] UUID not found - run install-sync.ps1 first"; exit 1
 }
 if (-not (Get-Command sqlite3 -ErrorAction SilentlyContinue)) {
-    Write-Error "[aic] sqlite3 not found. Install from https://sqlite.org/download.html or via: winget install SQLite.SQLite"
+    Write-Error "[aic] sqlite3 not found. Install via: winget install SQLite.SQLite"
     exit 1
 }
 
 $uuid = (Get-Content $UUID_FILE -Raw).Trim()
 $currentMonth = (Get-Date).ToString("yyyy-MM")
 
-$query = "SELECT strftime('%Y-%m', created_at), ROUND(SUM(total_nano_aiu) / 1000000000.0, 2), SUM(input_tokens), SUM(output_tokens) FROM assistant_usage_events WHERE strftime('%Y-%m', created_at) = '$currentMonth' GROUP BY strftime('%Y-%m', created_at);"
+$tmpFile = [System.IO.Path]::GetTempFileName()
+@"
+SELECT strftime('%Y-%m', created_at), ROUND(SUM(total_nano_aiu) / 1000000000.0, 2), SUM(input_tokens), SUM(output_tokens)
+FROM assistant_usage_events
+WHERE strftime('%Y-%m', created_at) = '$currentMonth'
+GROUP BY strftime('%Y-%m', created_at);
+"@ | Set-Content $tmpFile -Encoding UTF8
 
-$result = ($query | & sqlite3 "$DB" -separator "|")
+$result = (& sqlite3 "$DB" -separator "|" ".read `"$tmpFile`"")
+Remove-Item $tmpFile
 
 if (-not $result) {
     Write-Host "[aic] No usage data for current month"; exit 0
