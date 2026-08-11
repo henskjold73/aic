@@ -16,13 +16,18 @@ module.exports = async function handler(req, res) {
   const blobPath = `usage/${uuid}.json`;
 
   if (req.method === 'POST') {
-    const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    await put(blobPath, body, {
-      access: 'public',
-      addRandomSuffix: false,
-      contentType: 'application/json',
-    });
-    return res.status(200).json({ ok: true });
+    try {
+      const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      await put(blobPath, body, {
+        access: 'public',
+        addRandomSuffix: false,
+        contentType: 'application/json',
+      });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('[aic] blob put error:', err);
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   if (req.method === 'GET') {
