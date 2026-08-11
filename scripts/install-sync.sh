@@ -3,9 +3,9 @@ set -e
 
 CONFIG_DIR="$HOME/.config/aic"
 UUID_FILE="$CONFIG_DIR/uuid"
-SCRIPT_SRC="$(cd "$(dirname "$0")" && pwd)/update-usage.sh"
 SCRIPT_DEST="$CONFIG_DIR/update-usage.sh"
 PLIST="$HOME/Library/LaunchAgents/com.aic.usage-sync.plist"
+RAW="https://raw.githubusercontent.com/henskjold73/aic/main/scripts"
 
 mkdir -p "$CONFIG_DIR"
 
@@ -24,8 +24,8 @@ print(f'{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:]}')
 
 echo "$UUID" > "$UUID_FILE"
 
-# Copy update script to config dir so it works independently of the repo
-cp "$SCRIPT_SRC" "$SCRIPT_DEST"
+# Download update script from repo
+curl -sL "$RAW/update-usage.sh" -o "$SCRIPT_DEST"
 chmod +x "$SCRIPT_DEST"
 
 # Install launchd plist
