@@ -304,7 +304,7 @@ function TeamSidePanels({ members, today }) {
   return (
     <>
       {/* Left — most active */}
-      <div style={{ ...sidePanel, left: 16 }}>
+      <div style={{ ...sidePanel, left: "calc((100vw - 560px) / 4 - 74px)" }}>
         <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
         <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
         <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
@@ -314,7 +314,7 @@ function TeamSidePanels({ members, today }) {
 
       {/* Right — closest to budget */}
       {closestToBudget && (
-        <div style={{ ...sidePanel, right: 16 }}>
+        <div style={{ ...sidePanel, right: "calc((100vw - 560px) / 4 - 74px)" }}>
           <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Closest to daily budget</div>
           <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
           <div style={{ fontSize: "1.1rem", fontWeight: 700, color: closestToBudget.ratio > 1 ? "#e05252" : "#e0953a" }}>
