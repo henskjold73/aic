@@ -164,50 +164,86 @@ function TeamView({ teamId }) {
   if (loading) return <div style={{ ...pageWrap, justifyContent: "center" }}><div style={{ color: "#aaa", fontSize: "0.9rem" }}>Loading...</div></div>;
   if (!team || team.error) return <div style={pageWrap}><div style={card}><div style={{ color: "#e05252" }}>Team not found.</div><a href="/" style={{ fontSize: "0.75rem", color: "#aaa", display: "block", marginTop: 12 }}>Back</a></div></div>;
 
-  const members = team.members
-    .map(m => ({ ...m, aiu: m.usage?.month === currentMonth ? m.usage.aiu : null }))
-    .sort((a, b) => (b.aiu ?? -1) - (a.aiu ?? -1));
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
-  const totalAIU = members.reduce((s, m) => s + (m.aiu ?? 0), 0);
-  const maxAIU = Math.max(...members.map(m => m.aiu ?? 0), 1);
+  const enriched = team.members
+    .filter(m => m.usage?.month === currentMonth)
+    .map(m => {
+      const aiu = m.usage.aiu;
+      const budget = m.usage.budget ?? null;
+      const allowedPerDay = budget ? budget / totalDays : null;
+      const actualPerDay = dayOfMonth > 0 ? aiu / dayOfMonth : 0;
+      const ratio = allowedPerDay ? actualPerDay / allowedPerDay : null;
+      return { ...m, aiu, budget, allowedPerDay, actualPerDay, ratio };
+    });
+
+  const byUsage = [...enriched].sort((a, b) => b.aiu - a.aiu);
+  const byDailyBudget = [...enriched].filter(m => m.ratio != null).sort((a, b) => b.ratio - a.ratio);
+
+  const totalAIU = enriched.reduce((s, m) => s + m.aiu, 0);
+  const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
+
+  function MemberRow({ m, i, accent, value, sub }) {
+    return (
+      <div style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+            <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: 700, color: accent }}>{value}</div>
+            {sub && <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{sub}</div>}
+          </div>
+        </div>
+        <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
+          <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: `linear-gradient(90deg,${accent},${accent}99)`, borderRadius: 6 }} />
+        </div>
+        <div style={{ fontSize: "0.65rem", color: "#aaa", marginTop: 4 }}>synced {timeAgo(m.usage.updated_at)}</div>
+      </div>
+    );
+  }
 
   return (
     <div style={pageWrap}>
-      <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 520, color: "#1a1a2e" }}>
+      <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 560, color: "#1a1a2e" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
             <div style={{ fontSize: "1.3rem", fontWeight: 700 }}>{team.name}</div>
-            <div style={{ fontSize: "0.75rem", color: "#aaa" }}>{members.length} member{members.length !== 1 ? "s" : ""} · {new Date().toLocaleString("default", { month: "long", year: "numeric" })}</div>
+            <div style={{ fontSize: "0.75rem", color: "#aaa" }}>{enriched.length} member{enriched.length !== 1 ? "s" : ""} · {new Date().toLocaleString("default", { month: "long", year: "numeric" })}</div>
           </div>
           <a href="/" style={{ fontSize: "0.75rem", color: "#aaa", textDecoration: "none" }}>Back</a>
         </div>
 
-        {/* Members */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-          {members.map((m, i) => (
-            <div key={m.uuid} style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#4f6ef7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
-                  <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
-                </div>
-                <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#4f6ef7" }}>
-                  {m.aiu != null ? `${m.aiu.toFixed(1)} AIU` : <span style={{ color: "#ccc", fontWeight: 400 }}>no data</span>}
-                </div>
-              </div>
-              {m.aiu != null && (
-                <>
-                  <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
-                    <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: "linear-gradient(90deg,#4f6ef7,#7b8ff7)", borderRadius: 6 }} />
-                  </div>
-                  <div style={{ fontSize: "0.65rem", color: "#aaa", marginTop: 4 }}>
-                    synced {timeAgo(m.usage.updated_at)}
-                  </div>
-                </>
-              )}
+        <div style={{ display: "grid", gridTemplateColumns: byDailyBudget.length ? "1fr 1fr" : "1fr", gap: 16, marginBottom: 16 }}>
+          {/* Most active */}
+          <div>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {byUsage.map((m, i) => (
+                <MemberRow key={m.uuid} m={m} i={i} accent="#4f6ef7"
+                  value={`${m.aiu.toFixed(1)} AIU`} />
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Closest to daily budget */}
+          {byDailyBudget.length > 0 && (
+            <div>
+              <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Closest to daily budget</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {byDailyBudget.map((m, i) => (
+                  <MemberRow key={m.uuid} m={m} i={i}
+                    accent={m.ratio > 1 ? "#e05252" : "#e0953a"}
+                    value={`${m.actualPerDay.toFixed(1)} / ${m.allowedPerDay.toFixed(1)}`}
+                    sub="actual / allowed per day" />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Total */}
