@@ -194,7 +194,7 @@ function TeamView({ teamId }) {
     });
 
   const byUsage = [...enriched].sort((a, b) => b.aiu - a.aiu);
-  const byDailyBudget = [...enriched].filter(m => m.ratio != null).sort((a, b) => b.ratio - a.ratio);
+  const byDailyBudget = [...enriched].filter(m => m.ratio != null).sort((a, b) => Math.abs(a.actualPerDay - a.allowedPerDay) - Math.abs(b.actualPerDay - b.allowedPerDay));
 
   const totalAIU = enriched.reduce((s, m) => s + m.aiu, 0);
   const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
@@ -304,7 +304,7 @@ function TeamSidePanels({ members, today }) {
       const ratio = allowedPerDay > 0 ? actualPerDay / allowedPerDay : 0;
       return { ...m, allowedPerDay, actualPerDay, ratio };
     })
-    .sort((a, b) => b.ratio - a.ratio)[0];
+    .sort((a, b) => Math.abs(a.actualPerDay - a.allowedPerDay) - Math.abs(b.actualPerDay - b.allowedPerDay))[0];
 
   const sidePanel = {
     position: "fixed", top: "50%", transform: "translateY(-50%)",
