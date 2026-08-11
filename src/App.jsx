@@ -124,17 +124,31 @@ function TeamJoin({ teamId }) {
     </div>
   );
 
+  const isWin = navigator.userAgent.includes("Windows");
+  const installCmd = isWin
+    ? `irm https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.ps1 | iex`
+    : `bash <(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.sh)`;
+
   return (
     <div style={pageWrap}>
       <div style={card}>
         <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>Join team</div>
-        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 16 }}>Enter your name and sync UUID to add yourself to the team.</div>
+        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 16 }}>
+          First, install the sync script to get your UUID. Then enter your name and paste the UUID below.
+        </div>
+
+        <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 4 }}>1. Run in your terminal</div>
+        <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.72rem", color: "#555", wordBreak: "break-all" }}>
+          {installCmd}
+        </div>
+
+        <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 4 }}>2. Enter your details</div>
         <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 10 }}>
           Your name
           <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morgan" style={{ ...inputStyle, marginTop: 4 }} />
         </label>
         <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 12 }}>
-          Sync UUID
+          Sync UUID <span style={{ color: "#aaa", fontWeight: 400 }}>(printed by the install script)</span>
           <input value={uuid} onChange={e => setUuid(e.target.value)} placeholder="xxxxxxxx-xxxx-7xxx-xxxx-xxxxxxxxxxxx" style={{ ...inputStyle, marginTop: 4, fontFamily: "monospace", fontSize: "0.8rem" }} />
         </label>
         {status === "bad_uuid" && <div style={{ fontSize: "0.75rem", color: "#e05252", marginBottom: 8 }}>Invalid UUID — run the install script to get yours.</div>}
