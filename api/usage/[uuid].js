@@ -1,4 +1,4 @@
-const { put, list } = require('@vercel/blob');
+const { put, head } = require('@vercel/blob');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     try {
       const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
       await put(blobPath, body, {
-        access: 'private',
+        access: 'public',
         addRandomSuffix: false,
         contentType: 'application/json',
       });
@@ -32,13 +32,12 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { blobs } = await list({ prefix: blobPath, limit: 1 });
-      if (!blobs.length) return res.status(404).json({ error: 'not found' });
-      const response = await fetch(blobs[0].downloadUrl);
+      const blob = await head(blobPath);
+      const response = await fetch(blob.url);
       const data = await response.json();
       return res.status(200).json(data);
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      return res.status(404).json({ error: 'not found' });
     }
   }
 
