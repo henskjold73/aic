@@ -299,6 +299,10 @@ export default function App() {
       </div>
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
+
+      <div style={{ marginTop: 16, textAlign: "center", fontSize: "0.65rem", color: "#ccc" }}>
+        {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
+      </div>
     </div>
   );
 }
