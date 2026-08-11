@@ -32,11 +32,8 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { blobs } = await list({ prefix: blobPath, limit: 1 });
-      if (!blobs.length) return res.status(404).json({ error: 'not found' });
-      const response = await fetch(blobs[0].url);
-      const data = await response.json();
-      return res.status(200).json(data);
+      const all = await list({ prefix: 'usage/', limit: 10 });
+      return res.status(200).json({ looking_for: blobPath, found: all.blobs.map(b => b.pathname) });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
