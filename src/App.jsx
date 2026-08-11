@@ -297,6 +297,7 @@ function TeamSidePanels({ members, today }) {
     width: 148, background: "#fff", borderRadius: 12, padding: "14px 12px",
     border: "1px solid #e8eaff", boxShadow: "0 4px 20px rgba(79,110,247,0.08)",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
     fontSize: "0.72rem", color: "#666",
   };
 
