@@ -56,13 +56,23 @@ function AutoModal({ onClose }) {
 
         {(() => {
           const isWin = navigator.userAgent.includes("Windows");
-          const cmd = isWin
+          const install = isWin
             ? `irm https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.ps1 | iex`
             : `bash <(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.sh)`;
+          const uninstall = isWin
+            ? `irm https://raw.githubusercontent.com/henskjold73/aic/main/scripts/uninstall-sync.ps1 | iex`
+            : `bash <(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/uninstall-sync.sh)`;
           return (
-            <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.72rem", color: "#555", wordBreak: "break-all" }}>
-              {cmd}
-            </div>
+            <>
+              <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 4 }}>Install</div>
+              <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 10, fontFamily: "monospace", fontSize: "0.72rem", color: "#555", wordBreak: "break-all" }}>
+                {install}
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 4 }}>Uninstall</div>
+              <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.72rem", color: "#555", wordBreak: "break-all" }}>
+                {uninstall}
+              </div>
+            </>
           );
         })()}
 
