@@ -43,7 +43,7 @@ cat > "$PLIST" <<EOF
         <string>$SCRIPT_DEST</string>
     </array>
     <key>StartInterval</key>
-    <integer>3600</integer>
+    <integer>900</integer>
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
@@ -63,7 +63,7 @@ if [ "$OS" = "Darwin" ]; then
   launchctl load "$PLIST"
 else
   # Linux — cron
-  ( crontab -l 2>/dev/null | grep -v "aic/update-usage.sh"; echo "0 * * * * bash $SCRIPT_DEST" ) | crontab -
+  ( crontab -l 2>/dev/null | grep -v "aic/update-usage.sh"; echo "*/15 * * * * bash $SCRIPT_DEST" ) | crontab -
   echo "[aic] Cron job installed (runs hourly)"
 fi
 

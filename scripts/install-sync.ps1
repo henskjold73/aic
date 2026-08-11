@@ -17,7 +17,7 @@ $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
     -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$SCRIPT_DEST`""
 $trigger = New-ScheduledTaskTrigger `
-    -RepetitionInterval (New-TimeSpan -Hours 1) `
+    -RepetitionInterval (New-TimeSpan -Minutes 15) `
     -Once -At (Get-Date)
 Register-ScheduledTask -TaskName "aic-usage-sync" -Action $action -Trigger $trigger -Force | Out-Null
 
