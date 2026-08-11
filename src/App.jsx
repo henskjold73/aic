@@ -470,10 +470,11 @@ export default function App() {
           localStorage.setItem("aic_used", String(data.aiu));
           setSyncData(data);
           setSyncStatus("ok");
+          fetchTeam();
         }
       })
       .catch(() => setSyncStatus("error"));
-  }, []);
+  }, [fetchTeam]);
 
   useEffect(() => {
     fetchUsage();
@@ -499,7 +500,7 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
+  const fetchTeam = useCallback(() => {
     const teamId = localStorage.getItem("aic_team_id");
     if (!teamId) return;
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -515,6 +516,12 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchTeam();
+    const interval = setInterval(fetchTeam, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchTeam]);
 
   const aicInsight = useMemo(() => {
     const budget = parseFloat(monthlyAIC);
