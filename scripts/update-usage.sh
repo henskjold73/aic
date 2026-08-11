@@ -42,13 +42,16 @@ PAYLOAD=$(cat <<EOF
 EOF
 )
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+RESPONSE=$(curl -s -w "\n%{http_code}" \
   -X POST "$API/$UUID" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD")
 
+STATUS=$(echo "$RESPONSE" | tail -1)
+BODY=$(echo "$RESPONSE" | head -1)
+
 if [ "$STATUS" = "200" ]; then
   echo "[aic] Uploaded $aiu AIU for $month (uuid: $UUID)"
 else
-  echo "[aic] Upload failed — HTTP $STATUS"
+  echo "[aic] Upload failed — HTTP $STATUS: $BODY"
 fi
