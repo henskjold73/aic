@@ -99,6 +99,7 @@ export default function App() {
   const [usedAIC, setUsedAIC] = useState(() => localStorage.getItem("aic_used") ?? "");
   const [showAutoModal, setShowAutoModal] = useState(isAutoRoute);
   const [syncStatus, setSyncStatus] = useState(null); // null | "ok" | "error"
+  const [syncData, setSyncData] = useState(null);
 
   function updateMonthlyAIC(val) { setMonthlyAIC(val); localStorage.setItem("aic_monthly", val); }
   function updateUsedAIC(val) { setUsedAIC(val); localStorage.setItem("aic_used", val); }
@@ -113,6 +114,7 @@ export default function App() {
         if (data.month === currentMonth && data.aiu != null) {
           setUsedAIC(String(data.aiu));
           localStorage.setItem("aic_used", String(data.aiu));
+          setSyncData(data);
           setSyncStatus("ok");
         }
       })
@@ -260,6 +262,23 @@ export default function App() {
               <input type="number" value={usedAIC} onChange={e => updateUsedAIC(e.target.value)} placeholder="e.g. 340" style={inputStyle} />
             </label>
           </div>
+
+          {syncData && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, fontSize: "0.7rem", color: "#888" }}>
+              <div style={statBox}>
+                <div>Input tokens</div>
+                <div style={{ fontWeight: 700, color: "#333" }}>{syncData.input_tokens.toLocaleString()}</div>
+              </div>
+              <div style={statBox}>
+                <div>Output tokens</div>
+                <div style={{ fontWeight: 700, color: "#333" }}>{syncData.output_tokens.toLocaleString()}</div>
+              </div>
+              <div style={statBox}>
+                <div>Last synced</div>
+                <div style={{ fontWeight: 700, color: "#333" }}>{new Date(syncData.updated_at).toLocaleTimeString()}</div>
+              </div>
+            </div>
+          )}
 
           {aicInsight && (() => {
             const { dailyBurnRate, projected, remaining, allowedDailyFromNow, overBudget, pctUsed, burnStatus } = aicInsight;
