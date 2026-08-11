@@ -2,7 +2,7 @@ const { put, list } = require('@vercel/blob');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -15,21 +15,38 @@ module.exports = async function handler(req, res) {
 
   const blobPath = `usage/${uuid}.json`;
 
+  async function getExisting() {
+    const { blobs } = await list({ prefix: blobPath, limit: 1 });
+    if (!blobs.length) return {};
+    const r = await fetch(blobs[0].url);
+    return r.json();
+  }
+
+  // POST — full replace (from sync script)
   if (req.method === 'POST') {
     try {
       const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-      await put(blobPath, body, {
-        access: 'public',
-        addRandomSuffix: false,
-        contentType: 'application/json',
-      });
+      await put(blobPath, body, { access: 'public', addRandomSuffix: false, contentType: 'application/json' });
       return res.status(200).json({ ok: true });
     } catch (err) {
-      console.error('[aic] blob put error:', err);
       return res.status(500).json({ error: err.message });
     }
   }
 
+  // PATCH — merge fields (budget from browser)
+  if (req.method === 'PATCH') {
+    try {
+      const patch = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const existing = await getExisting();
+      const merged = { ...existing, ...patch };
+      await put(blobPath, JSON.stringify(merged), { access: 'public', addRandomSuffix: false, contentType: 'application/json' });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET
   if (req.method === 'GET') {
     try {
       const { blobs } = await list({ prefix: blobPath, limit: 1 });

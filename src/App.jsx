@@ -239,6 +239,58 @@ const card = { background: "#fff", borderRadius: 14, padding: "28px 24px", width
 const btnPrimary = { padding: "8px 18px", background: "#4f6ef7", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer", width: "100%" };
 const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6ef7", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" };
 
+// ── Team side panels ──────────────────────────────────────────────
+function TeamSidePanels({ members, today }) {
+  const dayOfMonth = today.getDate();
+
+  const topUser = [...members].sort((a, b) => b.aiu - a.aiu)[0];
+
+  const closestToBudget = [...members]
+    .filter(m => m.budget)
+    .map(m => {
+      const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const daysLeft = totalDays - dayOfMonth;
+      const remaining = m.budget - m.aiu;
+      const allowedPerDay = daysLeft > 0 ? remaining / daysLeft : 0;
+      return { ...m, allowedPerDay, remaining };
+    })
+    .sort((a, b) => a.allowedPerDay - b.allowedPerDay)[0];
+
+  const sidePanel = {
+    position: "fixed", top: "50%", transform: "translateY(-50%)",
+    width: 148, background: "#fff", borderRadius: 12, padding: "14px 12px",
+    border: "1px solid #e8eaff", boxShadow: "0 4px 20px rgba(79,110,247,0.08)",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: "0.72rem", color: "#666",
+  };
+
+  return (
+    <>
+      {/* Left — most active */}
+      <div style={{ ...sidePanel, left: 16 }}>
+        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
+        <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
+        <div style={{ color: "#aaa" }}>AIU this month</div>
+        <a href={`/team/${localStorage.getItem("aic_team_id")}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
+      </div>
+
+      {/* Right — closest to budget */}
+      {closestToBudget && (
+        <div style={{ ...sidePanel, right: 16 }}>
+          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Tightest budget</div>
+          <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: closestToBudget.allowedPerDay < 0 ? "#e05252" : "#e0953a" }}>
+            {closestToBudget.allowedPerDay.toFixed(1)}
+          </div>
+          <div style={{ color: "#aaa" }}>AIU/day left</div>
+          <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>{closestToBudget.remaining.toFixed(0)} remaining</div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Auto modal ────────────────────────────────────────────────────
 function AutoModal({ onClose }) {
   const [input, setInput] = useState(localStorage.getItem("aic_sync_uuid") ?? "");
@@ -339,8 +391,20 @@ export default function App() {
   const [showAutoModal, setShowAutoModal] = useState(isAutoRoute);
   const [syncStatus, setSyncStatus] = useState(null); // null | "ok" | "error"
   const [syncData, setSyncData] = useState(null);
+  const [teamData, setTeamData] = useState(null);
 
-  function updateMonthlyAIC(val) { setMonthlyAIC(val); localStorage.setItem("aic_monthly", val); }
+  function updateMonthlyAIC(val) {
+    setMonthlyAIC(val);
+    localStorage.setItem("aic_monthly", val);
+    const uuid = localStorage.getItem("aic_sync_uuid");
+    if (uuid && val) {
+      fetch(`/api/usage/${uuid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ budget: parseFloat(val) }),
+      }).catch(() => {});
+    }
+  }
   function updateUsedAIC(val) { setUsedAIC(val); localStorage.setItem("aic_used", val); }
 
   const fetchUsage = useCallback(() => {
@@ -365,6 +429,23 @@ export default function App() {
     const interval = setInterval(fetchUsage, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchUsage]);
+
+  useEffect(() => {
+    const teamId = localStorage.getItem("aic_team_id");
+    if (!teamId) return;
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    fetch(`/api/team/${teamId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) {
+          const members = data.members
+            .filter(m => m.usage?.month === currentMonth)
+            .map(m => ({ ...m, aiu: m.usage.aiu, budget: m.usage.budget ?? null }));
+          setTeamData({ ...data, members });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const aicInsight = useMemo(() => {
     const budget = parseFloat(monthlyAIC);
@@ -560,6 +641,8 @@ export default function App() {
       </div>
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
+
+      {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
 
       <div style={{ position: "fixed", bottom: 8, right: 10, fontSize: "0.6rem", color: "#999", fontFamily: "monospace", pointerEvents: "none" }}>
         {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
