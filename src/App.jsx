@@ -249,12 +249,12 @@ function TeamSidePanels({ members, today }) {
     .filter(m => m.budget)
     .map(m => {
       const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-      const daysLeft = totalDays - dayOfMonth;
-      const remaining = m.budget - m.aiu;
-      const allowedPerDay = daysLeft > 0 ? remaining / daysLeft : 0;
-      return { ...m, allowedPerDay, remaining };
+      const allowedPerDay = m.budget / totalDays;
+      const actualPerDay = dayOfMonth > 0 ? m.aiu / dayOfMonth : 0;
+      const ratio = allowedPerDay > 0 ? actualPerDay / allowedPerDay : 0;
+      return { ...m, allowedPerDay, actualPerDay, ratio };
     })
-    .sort((a, b) => a.allowedPerDay - b.allowedPerDay)[0];
+    .sort((a, b) => b.ratio - a.ratio)[0];
 
   const sidePanel = {
     position: "fixed", top: "50%", transform: "translateY(-50%)",
@@ -278,13 +278,13 @@ function TeamSidePanels({ members, today }) {
       {/* Right — closest to budget */}
       {closestToBudget && (
         <div style={{ ...sidePanel, right: 16 }}>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Tightest budget</div>
+          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Closest to daily budget</div>
           <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: closestToBudget.allowedPerDay < 0 ? "#e05252" : "#e0953a" }}>
-            {closestToBudget.allowedPerDay.toFixed(1)}
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: closestToBudget.ratio > 1 ? "#e05252" : "#e0953a" }}>
+            {closestToBudget.actualPerDay.toFixed(1)}
           </div>
-          <div style={{ color: "#aaa" }}>AIU/day left</div>
-          <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>{closestToBudget.remaining.toFixed(0)} remaining</div>
+          <div style={{ color: "#aaa" }}>AIU/day actual</div>
+          <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
         </div>
       )}
     </>
