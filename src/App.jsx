@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
 ];
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isWeekend(year, month, day) {
   const d = new Date(year, month, day).getDay();
@@ -26,15 +28,102 @@ function totalWorkdays(year, month) {
   return countWorkdays(year, month, daysInMonth(year, month));
 }
 
+function AutoModal({ onClose }) {
+  const [input, setInput] = useState(localStorage.getItem("aic_sync_uuid") ?? "");
+  const [status, setStatus] = useState(null);
+
+  function save() {
+    const val = input.trim();
+    if (!UUID_RE.test(val)) { setStatus("error"); return; }
+    localStorage.setItem("aic_sync_uuid", val);
+    setStatus("saved");
+    setTimeout(() => { window.location.href = "/"; }, 800);
+  }
+
+  function clear() {
+    localStorage.removeItem("aic_sync_uuid");
+    setInput("");
+    setStatus(null);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(20,20,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 14, padding: "28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(79,110,247,0.15)" }}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1a1a2e", marginBottom: 6 }}>Connect auto-sync</div>
+        <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 20, lineHeight: 1.5 }}>
+          Run the install script on your Mac to get your sync UUID, then paste it below. Your Copilot usage will update automatically every hour.
+        </div>
+
+        <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.78rem", color: "#555" }}>
+          bash &lt;(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.sh)
+        </div>
+
+        <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 12 }}>
+          Sync UUID
+          <input
+            value={input}
+            onChange={e => { setInput(e.target.value); setStatus(null); }}
+            placeholder="xxxxxxxx-xxxx-7xxx-xxxx-xxxxxxxxxxxx"
+            style={{ ...inputStyle, marginTop: 4, fontFamily: "monospace", fontSize: "0.82rem" }}
+          />
+        </label>
+
+        {status === "error" && <div style={{ fontSize: "0.75rem", color: "#e05252", marginBottom: 10 }}>Invalid UUID — check the value from the install script.</div>}
+        {status === "saved" && <div style={{ fontSize: "0.75rem", color: "#3ab87a", marginBottom: 10 }}>Saved! Redirecting…</div>}
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={save} style={{ flex: 1, padding: "8px 0", background: "#4f6ef7", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+            Save
+          </button>
+          {localStorage.getItem("aic_sync_uuid") && (
+            <button onClick={clear} style={{ padding: "8px 14px", background: "#fee", color: "#e05252", border: "1px solid #fcc", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+              Remove
+            </button>
+          )}
+          <button onClick={onClose} style={{ padding: "8px 14px", background: "#eef0ff", color: "#555", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const today = new Date();
+  const isAutoRoute = window.location.pathname === "/auto";
+
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [monthlyAIC, setMonthlyAIC] = useState(() => localStorage.getItem("aic_monthly") ?? "");
   const [usedAIC, setUsedAIC] = useState(() => localStorage.getItem("aic_used") ?? "");
+  const [showAutoModal, setShowAutoModal] = useState(isAutoRoute);
+  const [syncStatus, setSyncStatus] = useState(null); // null | "ok" | "error"
 
   function updateMonthlyAIC(val) { setMonthlyAIC(val); localStorage.setItem("aic_monthly", val); }
   function updateUsedAIC(val) { setUsedAIC(val); localStorage.setItem("aic_used", val); }
+
+  const fetchUsage = useCallback(() => {
+    const uuid = localStorage.getItem("aic_sync_uuid");
+    if (!uuid) return;
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    fetch(`/api/usage/${uuid}`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        if (data.month === currentMonth && data.aiu != null) {
+          setUsedAIC(String(data.aiu));
+          localStorage.setItem("aic_used", String(data.aiu));
+          setSyncStatus("ok");
+        }
+      })
+      .catch(() => setSyncStatus("error"));
+  }, []);
+
+  useEffect(() => {
+    fetchUsage();
+    const interval = setInterval(fetchUsage, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchUsage]);
 
   const aicInsight = useMemo(() => {
     const budget = parseFloat(monthlyAIC);
@@ -89,6 +178,8 @@ export default function App() {
   const cells = [];
   for (let i = 0; i < startOffset; i++) cells.push(null);
   for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  const hasSyncUUID = !!localStorage.getItem("aic_sync_uuid");
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" }}>
@@ -149,7 +240,16 @@ export default function App() {
 
         {/* AIC Panel */}
         <div style={{ marginTop: 14, background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>AI Credits (AIC)</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5 }}>AI Credits (AIC)</div>
+            <button
+              onClick={() => setShowAutoModal(true)}
+              title={hasSyncUUID ? (syncStatus === "ok" ? "Synced" : "Auto-sync configured") : "Set up auto-sync"}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: hasSyncUUID ? (syncStatus === "ok" ? "#3ab87a" : "#aaa") : "#aaa", padding: 0 }}
+            >
+              {hasSyncUUID ? (syncStatus === "ok" ? "⬤ synced" : "⬤ sync") : "⬤ set up sync"}
+            </button>
+          </div>
           <div style={{ display: "flex", gap: 10, marginBottom: aicInsight ? 12 : 0 }}>
             <label style={{ flex: 1, fontSize: "0.75rem", color: "#666" }}>
               Monthly budget
@@ -197,6 +297,8 @@ export default function App() {
         </div>
 
       </div>
+
+      {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
     </div>
   );
 }
