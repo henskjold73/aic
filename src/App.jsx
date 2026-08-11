@@ -155,7 +155,7 @@ function TeamView({ teamId }) {
   const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
 
   useEffect(() => {
-    fetch(`/api/team/${teamId}`)
+    fetch(`/api/team/${teamId}?t=${Date.now()}`)
       .then(r => r.json())
       .then(data => { setTeam(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -448,7 +448,7 @@ export default function App() {
     const uuid = localStorage.getItem("aic_sync_uuid");
     if (!uuid) return;
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-    fetch(`/api/usage/${uuid}`)
+    fetch(`/api/usage/${uuid}?t=${Date.now()}`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         if (data.month === currentMonth && data.aiu != null) {
@@ -471,7 +471,7 @@ export default function App() {
     const uuid = localStorage.getItem("aic_sync_uuid");
     const budget = parseFloat(localStorage.getItem("aic_monthly"));
     if (!uuid || !budget) return;
-    fetch(`/api/usage/${uuid}`)
+    fetch(`/api/usage/${uuid}?t=${Date.now()}`)
       .then(r => r.json())
       .then(data => {
         if (data.budget == null && budget) {
@@ -489,7 +489,7 @@ export default function App() {
     const teamId = localStorage.getItem("aic_team_id");
     if (!teamId) return;
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-    fetch(`/api/team/${teamId}`)
+    fetch(`/api/team/${teamId}?t=${Date.now()}`)
       .then(r => r.json())
       .then(data => {
         if (!data.error) {
