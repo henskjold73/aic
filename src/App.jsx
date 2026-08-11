@@ -54,9 +54,17 @@ function AutoModal({ onClose }) {
           Run the install script on your Mac to get your sync UUID, then paste it below. Your Copilot usage will update automatically every hour.
         </div>
 
-        <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.78rem", color: "#555" }}>
-          bash &lt;(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.sh)
-        </div>
+        {(() => {
+          const isWin = navigator.userAgent.includes("Windows");
+          const cmd = isWin
+            ? `irm https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.ps1 | iex`
+            : `bash <(curl -sL https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.sh)`;
+          return (
+            <div style={{ background: "#f4f5fb", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontFamily: "monospace", fontSize: "0.72rem", color: "#555", wordBreak: "break-all" }}>
+              {cmd}
+            </div>
+          );
+        })()}
 
         <label style={{ fontSize: "0.75rem", color: "#666", display: "block", marginBottom: 12 }}>
           Sync UUID

@@ -28,7 +28,8 @@ echo "$UUID" > "$UUID_FILE"
 curl -sL "$RAW/update-usage.sh" -o "$SCRIPT_DEST"
 chmod +x "$SCRIPT_DEST"
 
-# Install launchd plist
+# Install launchd plist (macOS only)
+if [ "$(uname -s)" = "Darwin" ]; then
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -52,10 +53,19 @@ cat > "$PLIST" <<EOF
 </dict>
 </plist>
 EOF
+fi
 
-# Load (or reload) the agent
-launchctl unload "$PLIST" 2>/dev/null || true
-launchctl load "$PLIST"
+OS=$(uname -s)
+
+if [ "$OS" = "Darwin" ]; then
+  # macOS — launchd
+  launchctl unload "$PLIST" 2>/dev/null || true
+  launchctl load "$PLIST"
+else
+  # Linux — cron
+  ( crontab -l 2>/dev/null | grep -v "aic/update-usage.sh"; echo "0 * * * * bash $SCRIPT_DEST" ) | crontab -
+  echo "[aic] Cron job installed (runs hourly)"
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
