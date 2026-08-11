@@ -51,7 +51,7 @@ function AutoModal({ onClose }) {
       <div style={{ background: "#fff", borderRadius: 14, padding: "28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(79,110,247,0.15)" }}>
         <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1a1a2e", marginBottom: 6 }}>Connect auto-sync</div>
         <div style={{ fontSize: "0.8rem", color: "#666", marginBottom: 20, lineHeight: 1.5 }}>
-          Run the install script on your Mac to get your sync UUID, then paste it below. Your Copilot usage will update automatically every hour.
+          Run the install script to get your sync UUID, then paste it below. Your Copilot usage will update automatically every 15 minutes.
         </div>
 
         {(() => {
