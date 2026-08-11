@@ -474,7 +474,8 @@ export default function App() {
         }
       })
       .catch(() => setSyncStatus("error"));
-  }, [fetchTeam]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchUsage();
