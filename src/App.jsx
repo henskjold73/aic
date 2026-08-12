@@ -203,14 +203,17 @@ function TeamView({ teamId }) {
   function MemberRow({ m, i, accent, value, sub, budgetRatio }) {
     let bar;
     if (budgetRatio != null) {
-      const pct = Math.min(budgetRatio * 100, 100);
+      // Full bar = 150% of budget. 100% budget ≈ 67% bar. 75% budget = 50% bar (spot on marker).
+      const pct = Math.min((budgetRatio / 1.5) * 100, 100);
       const barColor = budgetRatio < 0.70 ? "#3ab87a"
         : budgetRatio <= 0.80 ? "#4f6ef7"
         : "#e05252";
       bar = (
         <div style={{ position: "relative", background: "#eef0ff", borderRadius: 6, height: 6, overflow: "visible" }}>
-          {/* 75% target marker */}
-          <div style={{ position: "absolute", left: "75%", top: -1, width: 2, height: 8, background: "#c0c8ff", borderRadius: 1, zIndex: 1 }} />
+          {/* 75% budget marker at 50% of bar */}
+          <div style={{ position: "absolute", left: "50%", top: -1, width: 2, height: 8, background: "#c0c8ff", borderRadius: 1, zIndex: 1 }} />
+          {/* 100% budget marker at ~67% of bar */}
+          <div style={{ position: "absolute", left: "66.7%", top: -1, width: 2, height: 8, background: "#e0caff", borderRadius: 1, zIndex: 1 }} />
           <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 6, transition: "width 0.3s" }} />
         </div>
       );
