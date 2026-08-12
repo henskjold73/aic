@@ -49,6 +49,16 @@ function totalWorkdays(year, month) {
   return countWorkdays(year, month, daysInMonth(year, month));
 }
 
+function useWide(breakpoint = 600) {
+  const [wide, setWide] = useState(() => window.innerWidth >= breakpoint);
+  useEffect(() => {
+    const h = () => setWide(window.innerWidth >= breakpoint);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, [breakpoint]);
+  return wide;
+}
+
 // ── Team components ──────────────────────────────────────────────
 
 function TeamCreate() {
@@ -179,6 +189,7 @@ function TeamJoin({ teamId }) {
 function TeamView({ teamId }) {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
+  const wide = useWide(600);
   const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
 
   useEffect(() => {
@@ -274,7 +285,7 @@ function TeamView({ teamId }) {
           <a href="/" style={{ fontSize: "0.75rem", color: "#aaa", textDecoration: "none" }}>Back</a>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: byDailyBudget.length ? "1fr 1fr" : "1fr", gap: 16, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: byDailyBudget.length && wide ? "1fr 1fr" : "1fr", gap: 16, marginBottom: 16 }}>
           {/* Most active */}
           <div>
             <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
@@ -333,19 +344,14 @@ function offsetColor(ratio) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────
-const pageWrap = { minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" };
+const pageWrap = { minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "16px 12px" };
 const card = { background: "#fff", borderRadius: 14, padding: "28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(79,110,247,0.1)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
 const btnPrimary = { padding: "8px 18px", background: "#4f6ef7", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer", width: "100%" };
 const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6ef7", border: "none", borderRadius: 8, fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" };
 
 // ── Team side panels ──────────────────────────────────────────────
 function TeamSidePanels({ members, today }) {
-  const [wide, setWide] = useState(window.innerWidth >= 900);
-  useEffect(() => {
-    const handler = () => setWide(window.innerWidth >= 900);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
+  const wide = useWide(900);
 
   const dayOfMonth = today.getDate();
   const topUser = [...members].sort((a, b) => b.aiu - a.aiu)[0];
@@ -492,6 +498,7 @@ function AutoModal({ onClose }) {
 // ── Report page ───────────────────────────────────────────────────
 function ReportPage() {
   const uuid = localStorage.getItem('aic_sync_uuid');
+  const wide = useWide(520);
   const [history, setHistory] = useState(null);
   const [days, setDays] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -588,35 +595,37 @@ function ReportPage() {
           ) : !history?.length ? (
             <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No history yet — sync script will populate this over time.</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={th}>Month</th>
-                  <th style={{ ...th, textAlign: 'right' }}>AIU</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Input</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Output</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Budget</th>
-                  <th style={{ ...th, textAlign: 'right' }}>% Used</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map(r => {
-                  const pct = r.budget && r.aiu ? ((r.aiu / r.budget) * 100).toFixed(0) : null;
-                  const pctColor = !pct ? '#aaa' : pct > 100 ? '#e05252' : pct > 80 ? '#e0953a' : '#3ab87a';
-                  return (
-                    <tr key={r.month} style={{ cursor: 'pointer', background: r.month === selectedMonth ? '#f4f5fb' : 'transparent' }}
-                      onClick={() => setSelectedMonth(r.month)}>
-                      <td style={td}>{r.month}</td>
-                      <td style={tdR}>{r.aiu?.toFixed(1) ?? '—'}</td>
-                      <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>
-                      <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>
-                      <td style={tdR}>{r.budget?.toFixed(0) ?? '—'}</td>
-                      <td style={{ ...tdR, fontWeight: 700, color: pctColor }}>{pct ? `${pct}%` : '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: wide ? 'unset' : 340 }}>
+                <thead>
+                  <tr>
+                    <th style={th}>Month</th>
+                    <th style={{ ...th, textAlign: 'right' }}>AIU</th>
+                    {wide && <th style={{ ...th, textAlign: 'right' }}>Input</th>}
+                    {wide && <th style={{ ...th, textAlign: 'right' }}>Output</th>}
+                    <th style={{ ...th, textAlign: 'right' }}>Budget</th>
+                    <th style={{ ...th, textAlign: 'right' }}>% Used</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map(r => {
+                    const pct = r.budget && r.aiu ? ((r.aiu / r.budget) * 100).toFixed(0) : null;
+                    const pctColor = !pct ? '#aaa' : pct > 100 ? '#e05252' : pct > 80 ? '#e0953a' : '#3ab87a';
+                    return (
+                      <tr key={r.month} style={{ cursor: 'pointer', background: r.month === selectedMonth ? '#f4f5fb' : 'transparent' }}
+                        onClick={() => setSelectedMonth(r.month)}>
+                        <td style={td}>{r.month}</td>
+                        <td style={tdR}>{r.aiu?.toFixed(1) ?? '—'}</td>
+                        {wide && <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>}
+                        {wide && <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>}
+                        <td style={tdR}>{r.budget?.toFixed(0) ?? '—'}</td>
+                        <td style={{ ...tdR, fontWeight: 700, color: pctColor }}>{pct ? `${pct}%` : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
@@ -638,30 +647,32 @@ function ReportPage() {
           {!days ? (
             <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>Loading...</div>
           ) : !filteredDays.length ? (
-            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No daily data for {selectedMonth}. Update your sync script to v1.1.0 to start collecting daily data.</div>
+            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No daily data for {selectedMonth}. Update your sync script to v1.2.0 to start collecting daily data.</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={th}>Date</th>
-                  <th style={{ ...th, textAlign: 'right' }}>AIU</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Input</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Output</th>
-                  {projects.length > 0 && <th style={th}>Project</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDays.map(r => (
-                  <tr key={r.date}>
-                    <td style={td}>{typeof r.date === 'string' ? r.date.slice(0, 10) : new Date(r.date).toISOString().slice(0, 10)}</td>
-                    <td style={tdR}>{r.aiu?.toFixed(2) ?? '—'}</td>
-                    <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>
-                    <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>
-                    {projects.length > 0 && <td style={td}>{r.project ?? '—'}</td>}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={th}>Date</th>
+                    <th style={{ ...th, textAlign: 'right' }}>AIU</th>
+                    {wide && <th style={{ ...th, textAlign: 'right' }}>Input</th>}
+                    {wide && <th style={{ ...th, textAlign: 'right' }}>Output</th>}
+                    {projects.length > 0 && <th style={th}>Project</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredDays.map(r => (
+                    <tr key={r.date}>
+                      <td style={td}>{typeof r.date === 'string' ? r.date.slice(0, 10) : new Date(r.date).toISOString().slice(0, 10)}</td>
+                      <td style={tdR}>{r.aiu?.toFixed(2) ?? '—'}</td>
+                      {wide && <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>}
+                      {wide && <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>}
+                      {projects.length > 0 && <td style={td}>{r.project ?? '—'}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
