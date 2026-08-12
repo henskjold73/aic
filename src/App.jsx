@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { inject } from "@vercel/analytics";
+inject();
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
