@@ -200,20 +200,30 @@ function TeamView({ teamId }) {
   const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
+  // Color based on % off from daily budget pace
+  function offsetColor(ratio) {
+    const abs = Math.abs(Math.round((ratio - 1) * 100));
+    return abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252";
+  }
+
   function MemberRow({ m, i, accent, value, sub, budgetRatio }) {
     let bar;
     if (budgetRatio != null) {
-      // Full bar = 150% of budget. 100% budget ≈ 67% bar. 75% budget = 50% bar (spot on marker).
-      const pct = Math.min((budgetRatio / 1.5) * 100, 100);
-      const barColor = budgetRatio < 0.70 ? "#3ab87a"
-        : budgetRatio <= 0.80 ? "#4f6ef7"
-        : "#e05252";
+      // Bar: 0 = no usage (-100% off), 50% = on budget (0% off), 100% = 2x budget (+100% off)
+      const pct = Math.min((budgetRatio / 2) * 100, 100);
+      const barColor = offsetColor(budgetRatio);
       bar = (
         <div style={{ position: "relative", background: "#eef0ff", borderRadius: 6, height: 6, overflow: "visible" }}>
-          {/* 75% budget marker at 50% of bar */}
-          <div style={{ position: "absolute", left: "50%", top: -1, width: 2, height: 8, background: "#c0c8ff", borderRadius: 1, zIndex: 1 }} />
-          {/* 100% budget marker at ~67% of bar */}
-          <div style={{ position: "absolute", left: "66.7%", top: -1, width: 2, height: 8, background: "#e0caff", borderRadius: 1, zIndex: 1 }} />
+          {/* -30% threshold at 35% */}
+          <div style={{ position: "absolute", left: "35%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+          {/* -10% threshold at 45% */}
+          <div style={{ position: "absolute", left: "45%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+          {/* on budget (0% off) at 50% */}
+          <div style={{ position: "absolute", left: "50%", top: -1, width: 2, height: 8, background: "#3ab87a", borderRadius: 1, zIndex: 1, opacity: 0.6 }} />
+          {/* +10% threshold at 55% */}
+          <div style={{ position: "absolute", left: "55%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+          {/* +30% threshold at 65% */}
+          <div style={{ position: "absolute", left: "65%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
           <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 6, transition: "width 0.3s" }} />
         </div>
       );
@@ -276,7 +286,7 @@ function TeamView({ teamId }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {byDailyBudget.map((m, i) => (
                   <MemberRow key={m.uuid} m={m} i={i}
-                    accent={m.ratio < 0.70 ? "#3ab87a" : m.ratio <= 0.80 ? "#4f6ef7" : "#e05252"}
+                    accent={offsetColor(m.ratio)}
                     value={`${m.actualPerDay.toFixed(1)} / ${m.allowedPerDay.toFixed(1)}`}
                     sub="actual / allowed per day"
                     budgetRatio={m.ratio} />
