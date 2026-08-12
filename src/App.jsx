@@ -329,6 +329,13 @@ const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6e
 
 // ── Team side panels ──────────────────────────────────────────────
 function TeamSidePanels({ members, today }) {
+  const [wide, setWide] = useState(window.innerWidth >= 900);
+  useEffect(() => {
+    const handler = () => setWide(window.innerWidth >= 900);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   const dayOfMonth = today.getDate();
   const topUser = [...members].sort((a, b) => b.aiu - a.aiu)[0];
 
@@ -346,30 +353,43 @@ function TeamSidePanels({ members, today }) {
   const budgetColor = closestToBudget ? offsetColor(closestToBudget.ratio) : "#4f6ef7";
   const teamId = localStorage.getItem("aic_team_id");
 
-  const panel = {
-    flex: 1, background: "#fff", borderRadius: 10, padding: "12px 14px",
+  const panelBase = {
+    background: "#fff", borderRadius: 10, padding: "12px 14px",
     border: "1px solid #e8eaff", display: "flex", flexDirection: "column",
     alignItems: "center", textAlign: "center", fontSize: "0.72rem", color: "#666",
   };
 
+  const leftContent = (
+    <>
+      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Most active</div>
+      <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
+      <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
+      <div style={{ color: "#aaa" }}>AIU this month</div>
+      <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 8, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
+    </>
+  );
+
+  const rightContent = closestToBudget && (
+    <>
+      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Daily budget</div>
+      <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
+      <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
+      <div style={{ color: "#aaa" }}>AIU/day actual</div>
+      <div style={{ marginTop: 4, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
+    </>
+  );
+
+  if (wide) return (
+    <>
+      <div style={{ ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148, left: "calc((100vw - 480px) / 2 - 164px)" }}>{leftContent}</div>
+      {closestToBudget && <div style={{ ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148, right: "calc((100vw - 480px) / 2 - 164px)" }}>{rightContent}</div>}
+    </>
+  );
+
   return (
     <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-      <div style={panel}>
-        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Most active</div>
-        <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
-        <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
-        <div style={{ color: "#aaa" }}>AIU this month</div>
-        <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 8, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
-      </div>
-      {closestToBudget && (
-        <div style={panel}>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Daily budget</div>
-          <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
-          <div style={{ color: "#aaa" }}>AIU/day actual</div>
-          <div style={{ marginTop: 4, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
-        </div>
-      )}
+      <div style={{ ...panelBase, flex: 1 }}>{leftContent}</div>
+      {closestToBudget && <div style={{ ...panelBase, flex: 1 }}>{rightContent}</div>}
     </div>
   );
 }
