@@ -327,13 +327,6 @@ const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6e
 
 // ── Team side panels ──────────────────────────────────────────────
 function TeamSidePanels({ members, today }) {
-  const [wide, setWide] = useState(window.innerWidth >= 900);
-  useEffect(() => {
-    const handler = () => setWide(window.innerWidth >= 900);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-
   const dayOfMonth = today.getDate();
   const topUser = [...members].sort((a, b) => b.aiu - a.aiu)[0];
 
@@ -351,60 +344,31 @@ function TeamSidePanels({ members, today }) {
   const budgetColor = closestToBudget ? offsetColor(closestToBudget.ratio) : "#4f6ef7";
   const teamId = localStorage.getItem("aic_team_id");
 
-  const panelBase = {
-    background: "#fff", borderRadius: 12, padding: "14px 12px",
-    border: "1px solid #e8eaff", boxShadow: "0 4px 20px rgba(79,110,247,0.08)",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
-    fontSize: "0.72rem", color: "#666",
+  const panel = {
+    flex: 1, background: "#fff", borderRadius: 10, padding: "12px 14px",
+    border: "1px solid #e8eaff", display: "flex", flexDirection: "column",
+    alignItems: "center", textAlign: "center", fontSize: "0.72rem", color: "#666",
   };
 
-  const activePanel = wide
-    ? { ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148 }
-    : { ...panelBase, flex: 1 };
-
-  if (!wide) {
-    return (
-      <div style={{ width: "100%", maxWidth: 480, margin: "16px auto 0", display: "flex", gap: 12, padding: "0 16px", boxSizing: "border-box" }}>
-        <div style={activePanel}>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
-          <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
-          <div style={{ color: "#aaa" }}>AIU this month</div>
-          <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
-        </div>
-        {closestToBudget && (
-          <div style={activePanel}>
-            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Daily budget</div>
-            <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
-            <div style={{ color: "#aaa" }}>AIU/day actual</div>
-            <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div style={{ ...activePanel, left: "calc((100vw - 560px) / 4 - 74px)" }}>
-        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
+    <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+      <div style={panel}>
+        <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Most active</div>
         <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
         <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
         <div style={{ color: "#aaa" }}>AIU this month</div>
-        <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
+        <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 8, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
       </div>
       {closestToBudget && (
-        <div style={{ ...activePanel, right: "calc((100vw - 560px) / 4 - 74px)" }}>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Daily budget</div>
+        <div style={panel}>
+          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Daily budget</div>
           <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
           <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
           <div style={{ color: "#aaa" }}>AIU/day actual</div>
-          <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
+          <div style={{ marginTop: 4, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -1079,11 +1043,11 @@ export default function App() {
           ))}
         </div>
 
+        {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
+
       </div>
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
-
-      {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
 
       <div style={{ position: "fixed", bottom: 8, right: 10, fontSize: "0.6rem", color: "#999", fontFamily: "monospace", pointerEvents: "none" }}>
         {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
