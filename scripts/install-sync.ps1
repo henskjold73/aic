@@ -20,11 +20,12 @@ Invoke-WebRequest "$RAW/update-usage.ps1?t=$ts" -OutFile $SCRIPT_DEST
 # Create scheduled task (hourly)
 $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
-    -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$SCRIPT_DEST`""
+    -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$SCRIPT_DEST`""
 $trigger = New-ScheduledTaskTrigger `
     -RepetitionInterval (New-TimeSpan -Minutes 15) `
     -Once -At (Get-Date)
-Register-ScheduledTask -TaskName "aic-usage-sync" -Action $action -Trigger $trigger -Force | Out-Null
+$settings = New-ScheduledTaskSettingsSet -Hidden -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+Register-ScheduledTask -TaskName "aic-usage-sync" -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
