@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { inject } from "@vercel/analytics";
 inject();
 
@@ -32,6 +32,17 @@ function timeAgo(iso) {
   if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
   if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
   return `${Math.floor(sec / 86400)}d ago`;
+}
+
+function LiveAgo({ iso }) {
+  const [label, setLabel] = useState(() => timeAgo(iso));
+  useEffect(() => {
+    const sec = () => Math.floor((Date.now() - new Date(iso)) / 1000);
+    // Tick every second while under a minute, every 10s under an hour, else every minute
+    const interval = setInterval(() => setLabel(timeAgo(iso)), sec() < 60 ? 1000 : sec() < 3600 ? 10000 : 60000);
+    return () => clearInterval(interval);
+  }, [iso]);
+  return label;
 }
 
 function totalWorkdays(year, month) {
@@ -245,7 +256,7 @@ function TeamView({ teamId }) {
         </div>
         {bar}
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced {timeAgo(m.usage.updated_at)}</div>
+          <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced <LiveAgo iso={m.usage.updated_at} /></div>
           {budgetRatio != null ? (() => { const off = Math.round((budgetRatio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
         </div>
       </div>
@@ -815,6 +826,8 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const smartTimeouts = useRef([]);
+
   const fetchTeam = useCallback(() => {
     const teamId = localStorage.getItem("aic_team_id");
     if (!teamId) return;
@@ -827,6 +840,22 @@ export default function App() {
             .filter(m => m.usage?.month === currentMonth)
             .map(m => ({ ...m, aiu: m.usage.aiu, budget: m.usage.budget ?? null }));
           setTeamData({ ...data, members });
+
+          // Clear any pending smart timeouts from the previous fetch
+          smartTimeouts.current.forEach(clearTimeout);
+          smartTimeouts.current = [];
+
+          // For each member that synced recently, schedule a fetch at their 15m20s mark
+          const THRESHOLD_MS = (15 * 60 + 20) * 1000;
+          members.forEach(m => {
+            if (!m.usage?.updated_at) return;
+            const elapsed = Date.now() - new Date(m.usage.updated_at).getTime();
+            const msUntil = THRESHOLD_MS - elapsed;
+            if (msUntil > 0) {
+              const t = setTimeout(fetchTeam, msUntil);
+              smartTimeouts.current.push(t);
+            }
+          });
         }
       })
       .catch(() => {});
@@ -835,7 +864,10 @@ export default function App() {
   useEffect(() => {
     fetchTeam();
     const interval = setInterval(fetchTeam, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      smartTimeouts.current.forEach(clearTimeout);
+    };
   }, [fetchTeam]);
 
   const aicInsight = useMemo(() => {
@@ -1025,7 +1057,7 @@ export default function App() {
               </div>
               <div style={statBox}>
                 <div>Last synced</div>
-                <div style={{ fontWeight: 700, color: "#333" }}>{timeAgo(syncData.updated_at)}</div>
+                <div style={{ fontWeight: 700, color: "#333" }}><LiveAgo iso={syncData.updated_at} /></div>
               </div>
             </div>
           )}
