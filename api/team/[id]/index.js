@@ -1,4 +1,4 @@
-const { sql, ensureSchema } = require('../../db');
+const { sql } = require('../../db');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -13,8 +13,6 @@ module.exports = async function handler(req, res) {
   if (!id || !UUID_RE.test(id)) return res.status(400).json({ error: 'invalid id' });
 
   try {
-    await ensureSchema();
-
     const teamRows = await sql`
       SELECT * FROM teams WHERE id = ${id} LIMIT 1
     `;

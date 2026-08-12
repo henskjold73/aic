@@ -1,8 +1,11 @@
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.POSTGRES_URL);
+const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL);
+
+let schemaReady = false;
 
 async function ensureSchema() {
+  if (schemaReady) return;
   await sql`
     CREATE TABLE IF NOT EXISTS teams (
       id UUID PRIMARY KEY,
@@ -47,6 +50,8 @@ async function ensureSchema() {
       PRIMARY KEY (user_uuid, date)
     )
   `;
+
+  schemaReady = true;
 }
 
 module.exports = { sql, ensureSchema };

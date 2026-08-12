@@ -1,4 +1,4 @@
-const { sql, ensureSchema } = require('../db');
+const { sql } = require('../db');
 
 // POST /api/team — create a new team
 module.exports = async function handler(req, res) {
@@ -9,8 +9,6 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
   try {
-    await ensureSchema();
-
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const name = (body?.name || 'My Team').slice(0, 64);
     const id = crypto.randomUUID();

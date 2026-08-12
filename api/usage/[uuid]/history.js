@@ -1,4 +1,4 @@
-const { sql, ensureSchema } = require('../../db');
+const { sql } = require('../../db');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -14,8 +14,6 @@ module.exports = async function handler(req, res) {
   if (!uuid || !UUID_RE.test(uuid)) return res.status(400).json({ error: 'invalid uuid' });
 
   try {
-    await ensureSchema();
-
     const rows = await sql`
       SELECT month, aiu, input_tokens, output_tokens, budget, script_version, updated_at
       FROM usage
