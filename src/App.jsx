@@ -772,6 +772,8 @@ export default function App() {
   if (teamJoinMatch) return <TeamJoin teamId={teamJoinMatch[1]} />;
   if (teamViewMatch) return <TeamView teamId={teamViewMatch[1]} />;
 
+  const wide = useWide(480);
+
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [monthlyAIC, setMonthlyAIC] = useState(() => localStorage.getItem("aic_monthly") ?? "");
@@ -939,7 +941,7 @@ export default function App() {
   const hasSyncUUID = !!localStorage.getItem("aic_sync_uuid");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px", position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: wide ? "32px 16px" : "12px 10px", position: "relative" }}>
       <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 480, color: "#1a1a2e" }}>
 
         {/* Header */}
@@ -999,7 +1001,7 @@ export default function App() {
                 // Actual %: where you'll be at current burn rate
                 const actualPct = showBurn ? (dailyBurnRate * day / budget) * 100 : null;
 
-                const targetLabel = !weekend ? `${targetPct.toFixed(0)}%` : null;
+                const targetLabel = wide && !weekend ? `${targetPct.toFixed(0)}%` : null;
                 const actualLabel = showBurn && !weekend ? `${Math.min(actualPct, 999).toFixed(0)}%` : null;
 
                 const targetColor = isToday ? "rgba(255,255,255,0.7)" : "#aaa";
@@ -1010,16 +1012,16 @@ export default function App() {
                   : "#4f6ef7";
 
                 return (
-                  <div key={day} style={{ background: bg, border, borderRadius: 9, minHeight: 60, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px" }}>
-                    <div style={{ fontSize: "0.82rem", fontWeight: 600, color: numColor, lineHeight: 1 }}>{day}</div>
+                  <div key={day} style={{ background: bg, border, borderRadius: wide ? 9 : 7, minHeight: wide ? 60 : 56, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: wide ? 1 : 2, padding: "4px 2px" }}>
+                    <div style={{ fontSize: wide ? "0.82rem" : "0.9rem", fontWeight: 700, color: numColor, lineHeight: 1 }}>{day}</div>
                     {targetLabel && (
                       <div style={{ fontSize: "0.58rem", fontWeight: 500, color: targetColor, lineHeight: 1 }}>{targetLabel}</div>
                     )}
                     {actualLabel && (
-                      <div style={{ fontSize: "0.62rem", fontWeight: 700, color: actualColor, lineHeight: 1 }}>{actualLabel}</div>
+                      <div style={{ fontSize: wide ? "0.62rem" : "0.68rem", fontWeight: 700, color: actualColor, lineHeight: 1 }}>{actualLabel}</div>
                     )}
                     {isRunOut && !isToday && (
-                      <div style={{ fontSize: "0.5rem", color: "#e05252", fontWeight: 700, lineHeight: 1 }}>out</div>
+                      <div style={{ fontSize: "0.55rem", color: "#e05252", fontWeight: 700, lineHeight: 1 }}>out</div>
                     )}
                   </div>
                 );
@@ -1100,11 +1102,11 @@ export default function App() {
         </div>
 
         {/* Summary */}
-        <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 14px", display: "flex", gap: 20, fontSize: "0.78rem", color: "#666", border: "1px solid #e8eaff" }}>
+        <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 14px", display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "#666", border: "1px solid #e8eaff" }}>
           {[["Total workdays", totalWD], ["Elapsed", wdGone], ["Remaining", totalWD - wdGone], ["Progress", pctGone.toFixed(1) + "%"]].map(([label, val]) => (
             <div key={label}>
-              <div>{label}</div>
-              <div style={{ fontSize: "1rem", fontWeight: 700, color: "#4f6ef7" }}>{val}</div>
+              <div style={{ fontSize: wide ? "0.78rem" : "0.68rem" }}>{label}</div>
+              <div style={{ fontSize: wide ? "1rem" : "0.92rem", fontWeight: 700, color: "#4f6ef7" }}>{val}</div>
             </div>
           ))}
         </div>
@@ -1126,11 +1128,14 @@ const navBtn = {
   background: "#eef0ff",
   border: "none",
   borderRadius: 8,
-  width: 34,
-  height: 34,
+  width: 40,
+  height: 40,
   cursor: "pointer",
   fontSize: "1rem",
   color: "#333",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const inputStyle = {
