@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
     if (!uuid || !UUID_RE.test(uuid)) return res.status(400).json({ error: 'invalid uuid' });
     if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
 
-    const { rows: teamRows } = await sql`
+    const teamRows = await sql`
       SELECT name FROM teams WHERE id = ${id} LIMIT 1
     `;
     if (!teamRows.length) return res.status(404).json({ error: 'team not found' });

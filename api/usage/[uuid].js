@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
   // GET — return current month's usage
   if (req.method === 'GET') {
     try {
-      const { rows } = await sql`
+      const rows = await sql`
         SELECT * FROM usage
         WHERE user_uuid = ${uuid} AND month = ${currentMonth}
         LIMIT 1

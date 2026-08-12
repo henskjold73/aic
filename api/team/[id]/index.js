@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   try {
     await ensureSchema();
 
-    const { rows: teamRows } = await sql`
+    const teamRows = await sql`
       SELECT * FROM teams WHERE id = ${id} LIMIT 1
     `;
     if (!teamRows.length) return res.status(404).json({ error: 'team not found' });
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
 
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    const { rows: members } = await sql`
+    const members = await sql`
       SELECT
         tm.user_uuid AS uuid,
         tm.display_name AS name,
