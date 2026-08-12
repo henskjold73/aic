@@ -17,6 +17,11 @@ if (Test-Path $UUID_FILE) {
 $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 Invoke-WebRequest "$RAW/update-usage.ps1?t=$ts" -OutFile $SCRIPT_DEST
 
+# Remove any existing aic-related scheduled tasks before registering
+Get-ScheduledTask | Where-Object { $_.TaskName -like "*aic*" } | ForEach-Object {
+    Unregister-ScheduledTask -TaskName $_.TaskName -Confirm:$false
+}
+
 # Create scheduled task (hourly)
 $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `

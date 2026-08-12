@@ -1,4 +1,4 @@
-$ScriptVersion = "1.1.0"
+$ScriptVersion = "1.2.0"
 $DB = "$env:USERPROFILE\.copilot\session-store.db"
 $UUID_FILE = "$env:APPDATA\aic\uuid"
 $PROJECT_FILE = "$env:APPDATA\aic\project"

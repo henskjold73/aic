@@ -392,8 +392,8 @@ function TeamSidePanels({ members, today }) {
 
   if (wide) return (
     <>
-      <div style={{ ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148, left: "calc((100vw - 480px) / 2 - 164px)" }}>{leftContent}</div>
-      {closestToBudget && <div style={{ ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148, right: "calc((100vw - 480px) / 2 - 164px)" }}>{rightContent}</div>}
+      <div style={{ ...panelBase, position: "absolute", top: 32, left: 16, width: 148 }}>{leftContent}</div>
+      {closestToBudget && <div style={{ ...panelBase, position: "absolute", top: 32, right: 16, width: 148 }}>{rightContent}</div>}
     </>
   );
 
@@ -927,7 +927,7 @@ export default function App() {
   const hasSyncUUID = !!localStorage.getItem("aic_sync_uuid");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" }}>
+    <div style={{ minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px", position: "relative" }}>
       <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 480, color: "#1a1a2e" }}>
 
         {/* Header */}
@@ -1097,9 +1097,9 @@ export default function App() {
           ))}
         </div>
 
-        {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
-
       </div>
+
+      {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
 
