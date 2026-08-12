@@ -726,7 +726,7 @@ export default function App() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [monthlyAIC, setMonthlyAIC] = useState(() => localStorage.getItem("aic_monthly") ?? "");
-  const [usedAIC, setUsedAIC] = useState(() => localStorage.getItem("aic_used") ?? "");
+  const [usedAIC, setUsedAIC] = useState(() => { const v = localStorage.getItem("aic_used"); return v ? String(Math.round(parseFloat(v))) : ""; });
   const [showAutoModal, setShowAutoModal] = useState(isAutoRoute);
   const [syncStatus, setSyncStatus] = useState(null); // null | "ok" | "error"
   const [syncData, setSyncData] = useState(null);
@@ -754,7 +754,7 @@ export default function App() {
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         if (data.month === currentMonth && data.aiu != null) {
-          setUsedAIC(String(data.aiu));
+          setUsedAIC(String(Math.round(data.aiu)));
           localStorage.setItem("aic_used", String(data.aiu));
           setSyncData(data);
           setSyncStatus("ok");
