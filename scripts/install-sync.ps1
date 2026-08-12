@@ -5,9 +5,13 @@ $RAW = "https://raw.githubusercontent.com/henskjold73/aic/main/scripts"
 
 New-Item -ItemType Directory -Force -Path $CONFIG_DIR | Out-Null
 
-# Generate UUID (unique and unguessable)
-$uuid = [System.Guid]::NewGuid().ToString()
-Set-Content -Path $UUID_FILE -Value $uuid
+# Preserve existing UUID if present, otherwise generate a new one
+if (Test-Path $UUID_FILE) {
+    $uuid = (Get-Content $UUID_FILE -Raw).Trim()
+} else {
+    $uuid = [System.Guid]::NewGuid().ToString()
+    Set-Content -Path $UUID_FILE -Value $uuid
+}
 
 # Download update script
 $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()

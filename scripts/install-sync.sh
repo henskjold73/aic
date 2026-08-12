@@ -9,8 +9,11 @@ RAW="https://raw.githubusercontent.com/henskjold73/aic/main/scripts"
 
 mkdir -p "$CONFIG_DIR"
 
-# Generate UUID v7 (timestamp-based, works on Python 3.8+)
-UUID=$(python3 -c "
+# Preserve existing UUID if present, otherwise generate a new one
+if [ -f "$UUID_FILE" ]; then
+  UUID=$(cat "$UUID_FILE")
+else
+  UUID=$(python3 -c "
 import time, random
 ms = int(time.time() * 1000)
 rand_a = random.getrandbits(12)
@@ -21,8 +24,8 @@ n = (high << 64) | low
 h = f'{n:032x}'
 print(f'{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:]}')
 ")
-
-echo "$UUID" > "$UUID_FILE"
+  echo "$UUID" > "$UUID_FILE"
+fi
 
 # Download update script from repo
 curl -sL "$RAW/update-usage.sh?t=$(date +%s)" -o "$SCRIPT_DEST"
