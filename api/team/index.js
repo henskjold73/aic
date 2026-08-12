@@ -1,6 +1,4 @@
-const { put } = require('@vercel/blob');
-
-const ENV = process.env.VERCEL_ENV === 'production' ? '' : `${process.env.VERCEL_ENV || 'development'}/`;
+const { sql, ensureSchema } = require('../db');
 
 // POST /api/team — create a new team
 module.exports = async function handler(req, res) {
@@ -11,17 +9,15 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
   try {
+    await ensureSchema();
+
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const name = (body?.name || 'My Team').slice(0, 64);
-
     const id = crypto.randomUUID();
-    const team = { id, name, members: [], created_at: new Date().toISOString() };
 
-    await put(`${ENV}teams/${id}.json`, JSON.stringify(team), {
-      access: 'public',
-      addRandomSuffix: false,
-      contentType: 'application/json',
-    });
+    await sql`
+      INSERT INTO teams (id, name) VALUES (${id}, ${name})
+    `;
 
     return res.status(200).json({ id, name });
   } catch (err) {
