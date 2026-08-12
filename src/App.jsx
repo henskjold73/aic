@@ -238,7 +238,10 @@ function TeamView({ teamId }) {
           </div>
         </div>
         {bar}
-        <div style={{ fontSize: "0.65rem", color: "#aaa", marginTop: 4 }}>synced {timeAgo(m.usage.updated_at)}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced {timeAgo(m.usage.updated_at)}</div>
+          {m.budget ? <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{((m.aiu / m.budget) * 100).toFixed(0)}% of budget</div> : null}
+        </div>
       </div>
     );
   }
