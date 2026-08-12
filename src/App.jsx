@@ -240,7 +240,7 @@ function TeamView({ teamId }) {
         {bar}
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
           <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced {timeAgo(m.usage.updated_at)}</div>
-          {m.budget ? <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{((m.aiu / m.budget) * 100).toFixed(0)}% of budget</div> : null}
+          {m.ratio != null ? (() => { const off = Math.round((m.ratio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
         </div>
       </div>
     );
