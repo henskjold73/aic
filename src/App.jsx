@@ -451,6 +451,187 @@ function AutoModal({ onClose }) {
   );
 }
 
+// ── Report page ───────────────────────────────────────────────────
+function ReportPage() {
+  const uuid = localStorage.getItem('aic_sync_uuid');
+  const [history, setHistory] = useState(null);
+  const [days, setDays] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [selectedProject, setSelectedProject] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!uuid) { setLoading(false); return; }
+    fetch(`/api/usage/${uuid}/history`)
+      .then(r => r.json())
+      .then(data => { setHistory(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [uuid]);
+
+  useEffect(() => {
+    if (!uuid) return;
+    fetch(`/api/usage/${uuid}/days?month=${selectedMonth}`)
+      .then(r => r.json())
+      .then(data => setDays(Array.isArray(data) ? data : []))
+      .catch(() => setDays([]));
+  }, [uuid, selectedMonth]);
+
+  const projects = useMemo(() => {
+    if (!days) return [];
+    const set = new Set(days.map(d => d.project).filter(Boolean));
+    return [...set];
+  }, [days]);
+
+  const filteredDays = useMemo(() => {
+    if (!days) return [];
+    if (selectedProject === 'all') return days;
+    return days.filter(d => d.project === selectedProject);
+  }, [days, selectedProject]);
+
+  function exportCSV() {
+    if (!history) return;
+    const monthRows = history.map(r =>
+      [r.month, r.aiu ?? '', r.input_tokens ?? '', r.output_tokens ?? '', r.budget ?? ''].join(',')
+    );
+    const csv = ['month,aiu,input_tokens,output_tokens,budget', ...monthRows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = `aic-history-${uuid?.slice(0, 8)}.csv`;
+    a.click();
+  }
+
+  function exportDailyCSV() {
+    if (!filteredDays.length) return;
+    const rows = filteredDays.map(r =>
+      [r.date, r.aiu ?? '', r.input_tokens ?? '', r.output_tokens ?? '', r.project ?? ''].join(',')
+    );
+    const csv = ['date,aiu,input_tokens,output_tokens,project', ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = `aic-daily-${selectedMonth}-${uuid?.slice(0, 8)}.csv`;
+    a.click();
+  }
+
+  const th = { fontSize: '0.7rem', fontWeight: 700, color: '#4f6ef7', textTransform: 'uppercase', letterSpacing: 0.5, padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid #e8eaff' };
+  const td = { fontSize: '0.8rem', color: '#333', padding: '7px 10px', borderBottom: '1px solid #f0f1ff' };
+  const tdR = { ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+
+  if (!uuid) return (
+    <div style={pageWrap}>
+      <div style={card}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>No sync UUID found</div>
+        <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 16 }}>Set up auto-sync first to see your report.</div>
+        <a href="/" style={{ ...btnPrimary, display: 'block', textAlign: 'center', textDecoration: 'none' }}>Back</a>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={pageWrap}>
+      <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: '100%', maxWidth: 640, color: '#1a1a2e' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>Usage Report</div>
+          <a href="/" style={{ fontSize: '0.75rem', color: '#aaa', textDecoration: 'none' }}>← Back</a>
+        </div>
+
+        {/* Monthly history */}
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8eaff', marginBottom: 20, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #f0f1ff' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Monthly History</div>
+            <button onClick={exportCSV} style={{ ...btnSecondary, fontSize: '0.72rem' }}>Export CSV</button>
+          </div>
+          {loading ? (
+            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>Loading...</div>
+          ) : !history?.length ? (
+            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No history yet — sync script will populate this over time.</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={th}>Month</th>
+                  <th style={{ ...th, textAlign: 'right' }}>AIU</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Input</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Output</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Budget</th>
+                  <th style={{ ...th, textAlign: 'right' }}>% Used</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map(r => {
+                  const pct = r.budget && r.aiu ? ((r.aiu / r.budget) * 100).toFixed(0) : null;
+                  const pctColor = !pct ? '#aaa' : pct > 100 ? '#e05252' : pct > 80 ? '#e0953a' : '#3ab87a';
+                  return (
+                    <tr key={r.month} style={{ cursor: 'pointer', background: r.month === selectedMonth ? '#f4f5fb' : 'transparent' }}
+                      onClick={() => setSelectedMonth(r.month)}>
+                      <td style={td}>{r.month}</td>
+                      <td style={tdR}>{r.aiu?.toFixed(1) ?? '—'}</td>
+                      <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>
+                      <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>
+                      <td style={tdR}>{r.budget?.toFixed(0) ?? '—'}</td>
+                      <td style={{ ...tdR, fontWeight: 700, color: pctColor }}>{pct ? `${pct}%` : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Daily breakdown */}
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8eaff', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #f0f1ff', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Daily — {selectedMonth}</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {projects.length > 0 && (
+                <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
+                  style={{ fontSize: '0.75rem', border: '1px solid #dde0f5', borderRadius: 6, padding: '4px 8px', background: '#f7f8ff', color: '#333' }}>
+                  <option value="all">All projects</option>
+                  {projects.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              )}
+              <button onClick={exportDailyCSV} style={{ ...btnSecondary, fontSize: '0.72rem' }}>Export CSV</button>
+            </div>
+          </div>
+          {!days ? (
+            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>Loading...</div>
+          ) : !filteredDays.length ? (
+            <div style={{ padding: '20px', fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No daily data for {selectedMonth}. Update your sync script to v1.1.0 to start collecting daily data.</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={th}>Date</th>
+                  <th style={{ ...th, textAlign: 'right' }}>AIU</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Input</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Output</th>
+                  {projects.length > 0 && <th style={th}>Project</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDays.map(r => (
+                  <tr key={r.date}>
+                    <td style={td}>{typeof r.date === 'string' ? r.date.slice(0, 10) : new Date(r.date).toISOString().slice(0, 10)}</td>
+                    <td style={tdR}>{r.aiu?.toFixed(2) ?? '—'}</td>
+                    <td style={tdR}>{r.input_tokens?.toLocaleString() ?? '—'}</td>
+                    <td style={tdR}>{r.output_tokens?.toLocaleString() ?? '—'}</td>
+                    {projects.length > 0 && <td style={td}>{r.project ?? '—'}</td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ── Privacy / What's installed page ──────────────────────────────
 function PrivacyPage() {
   const isWin = navigator.userAgent.includes("Windows");
@@ -537,6 +718,7 @@ export default function App() {
   const teamJoinMatch = path.match(/^\/team\/([^/]+)\/join$/);
   const teamViewMatch = path.match(/^\/team\/([^/]+)$/);
   if (path === "/privacy") return <PrivacyPage />;
+  if (path === "/report") return <ReportPage />;
   if (teamCreateMatch) return <TeamCreate />;
   if (teamJoinMatch) return <TeamJoin teamId={teamJoinMatch[1]} />;
   if (teamViewMatch) return <TeamView teamId={teamViewMatch[1]} />;
@@ -698,6 +880,7 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <a href="/team" style={{ ...navBtn, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600, color: "#4f6ef7" }}>Team</a>
+            <a href="/report" style={{ ...navBtn, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "0.75rem", fontWeight: 600, color: "#4f6ef7" }}>Report</a>
             <button onClick={nextMonth} style={navBtn}>→</button>
           </div>
         </div>

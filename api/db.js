@@ -34,6 +34,19 @@ async function ensureSchema() {
       PRIMARY KEY (user_uuid, month)
     )
   `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS usage_daily (
+      user_uuid UUID NOT NULL,
+      date DATE NOT NULL,
+      aiu NUMERIC(14, 4),
+      input_tokens BIGINT,
+      output_tokens BIGINT,
+      project TEXT,
+      synced_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (user_uuid, date)
+    )
+  `;
 }
 
 module.exports = { sql, ensureSchema };
