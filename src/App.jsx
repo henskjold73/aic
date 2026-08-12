@@ -200,12 +200,6 @@ function TeamView({ teamId }) {
   const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
-  // Color based on % off from daily budget pace
-  function offsetColor(ratio) {
-    const abs = Math.abs(Math.round((ratio - 1) * 100));
-    return abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252";
-  }
-
   function MemberRow({ m, i, accent, value, sub, budgetRatio }) {
     let bar;
     if (budgetRatio != null) {
@@ -250,7 +244,7 @@ function TeamView({ teamId }) {
         {bar}
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
           <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced {timeAgo(m.usage.updated_at)}</div>
-          {m.ratio != null ? (() => { const off = Math.round((m.ratio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
+          {budgetRatio != null ? (() => { const off = Math.round((budgetRatio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
         </div>
       </div>
     );
@@ -319,6 +313,12 @@ function TeamView({ teamId }) {
   );
 }
 
+// ── Shared helpers ────────────────────────────────────────────────
+function offsetColor(ratio) {
+  const abs = Math.abs(Math.round((ratio - 1) * 100));
+  return abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252";
+}
+
 // ── Styles ────────────────────────────────────────────────────────
 const pageWrap = { minHeight: "100vh", background: "#f4f5fb", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px" };
 const card = { background: "#fff", borderRadius: 14, padding: "28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(79,110,247,0.1)", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
@@ -327,8 +327,14 @@ const btnSecondary = { padding: "6px 12px", background: "#eef0ff", color: "#4f6e
 
 // ── Team side panels ──────────────────────────────────────────────
 function TeamSidePanels({ members, today }) {
-  const dayOfMonth = today.getDate();
+  const [wide, setWide] = useState(window.innerWidth >= 900);
+  useEffect(() => {
+    const handler = () => setWide(window.innerWidth >= 900);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
+  const dayOfMonth = today.getDate();
   const topUser = [...members].sort((a, b) => b.aiu - a.aiu)[0];
 
   const closestToBudget = [...members]
@@ -342,34 +348,58 @@ function TeamSidePanels({ members, today }) {
     })
     .sort((a, b) => Math.abs(a.actualPerDay - a.allowedPerDay) - Math.abs(b.actualPerDay - b.allowedPerDay))[0];
 
-  const sidePanel = {
-    position: "fixed", top: "50%", transform: "translateY(-50%)",
-    width: 148, background: "#fff", borderRadius: 12, padding: "14px 12px",
+  const budgetColor = closestToBudget ? offsetColor(closestToBudget.ratio) : "#4f6ef7";
+  const teamId = localStorage.getItem("aic_team_id");
+
+  const panelBase = {
+    background: "#fff", borderRadius: 12, padding: "14px 12px",
     border: "1px solid #e8eaff", boxShadow: "0 4px 20px rgba(79,110,247,0.08)",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
     fontSize: "0.72rem", color: "#666",
   };
 
+  const activePanel = wide
+    ? { ...panelBase, position: "fixed", top: "50%", transform: "translateY(-50%)", width: 148 }
+    : { ...panelBase, flex: 1 };
+
+  if (!wide) {
+    return (
+      <div style={{ width: "100%", maxWidth: 480, margin: "16px auto 0", display: "flex", gap: 12, padding: "0 16px", boxSizing: "border-box" }}>
+        <div style={activePanel}>
+          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
+          <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
+          <div style={{ color: "#aaa" }}>AIU this month</div>
+          <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
+        </div>
+        {closestToBudget && (
+          <div style={activePanel}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Daily budget</div>
+            <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
+            <div style={{ color: "#aaa" }}>AIU/day actual</div>
+            <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Left — most active */}
-      <div style={{ ...sidePanel, left: "calc((100vw - 560px) / 4 - 74px)" }}>
+      <div style={{ ...activePanel, left: "calc((100vw - 560px) / 4 - 74px)" }}>
         <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Most active</div>
         <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{topUser.name}</div>
         <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#4f6ef7" }}>{topUser.aiu.toFixed(1)}</div>
         <div style={{ color: "#aaa" }}>AIU this month</div>
-        <a href={`/team/${localStorage.getItem("aic_team_id")}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
+        <a href={`/team/${teamId}`} style={{ display: "block", marginTop: 10, fontSize: "0.65rem", color: "#4f6ef7", textDecoration: "none", fontWeight: 600 }}>View team →</a>
       </div>
-
-      {/* Right — closest to budget */}
       {closestToBudget && (
-        <div style={{ ...sidePanel, right: "calc((100vw - 560px) / 4 - 74px)" }}>
-          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#e0953a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Closest to daily budget</div>
+        <div style={{ ...activePanel, right: "calc((100vw - 560px) / 4 - 74px)" }}>
+          <div style={{ fontSize: "0.65rem", fontWeight: 700, color: budgetColor, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Daily budget</div>
           <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: "0.85rem", marginBottom: 2 }}>{closestToBudget.name}</div>
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: closestToBudget.ratio > 1 ? "#e05252" : "#e0953a" }}>
-            {closestToBudget.actualPerDay.toFixed(1)}
-          </div>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: budgetColor }}>{closestToBudget.actualPerDay.toFixed(1)}</div>
           <div style={{ color: "#aaa" }}>AIU/day actual</div>
           <div style={{ marginTop: 6, color: "#bbb", fontSize: "0.65rem" }}>budget {closestToBudget.allowedPerDay.toFixed(1)}/day</div>
         </div>
