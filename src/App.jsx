@@ -440,6 +440,85 @@ function AutoModal({ onClose }) {
             Cancel
           </button>
         </div>
+        <div style={{ marginTop: 14, textAlign: "center" }}>
+          <a href="/privacy" style={{ fontSize: "0.7rem", color: "#aaa", textDecoration: "none" }}>What does this install on my computer?</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Privacy / What's installed page ──────────────────────────────
+function PrivacyPage() {
+  const isWin = navigator.userAgent.includes("Windows");
+  const mono = { fontFamily: "monospace", fontSize: "0.78rem", background: "#f4f5fb", borderRadius: 6, padding: "8px 10px", color: "#444", wordBreak: "break-all", marginBottom: 4 };
+  const h2 = { fontSize: "0.85rem", fontWeight: 700, color: "#1a1a2e", margin: "20px 0 6px" };
+  const p = { fontSize: "0.82rem", color: "#555", lineHeight: 1.6, margin: "0 0 8px" };
+
+  return (
+    <div style={pageWrap}>
+      <div style={{ ...card, maxWidth: 560 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>What's on your computer</div>
+          <a href="/" style={{ fontSize: "0.75rem", color: "#aaa", textDecoration: "none" }}>Back</a>
+        </div>
+
+        <p style={p}>The sync script installs a background job that reads your local Copilot usage data and sends your monthly total to the app. Here's exactly what it does and where everything lives.</p>
+
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4, marginBottom: 12 }}>What is read</div>
+        <p style={p}>Only one file is ever read from your machine — the Copilot CLI session database:</p>
+        <div style={mono}>~/.copilot/session-store.db</div>
+        <p style={{ ...p, marginTop: 6 }}>A single SQL query extracts your total <code>total_nano_aiu</code> for the current calendar month. No prompts, no code, no conversation content is ever accessed.</p>
+
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 20, marginBottom: 12 }}>What is sent</div>
+        <p style={p}>A small JSON payload is POSTed to your Vercel deployment every 15 minutes:</p>
+        <div style={mono}>{"{ \"aiu\": 1234.5, \"month\": \"2026-08\", \"updated_at\": \"...\", \"input_tokens\": ..., \"output_tokens\": ... }"}</div>
+        <p style={{ ...p, marginTop: 6 }}>It is stored under your UUID path in Vercel Blob. No name, email, or identity is ever sent — only the UUID links the data to you, and only you know your UUID.</p>
+
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#4f6ef7", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 20, marginBottom: 12 }}>Files created on your machine</div>
+
+        {isWin ? (<>
+          <p style={p}><strong>Config directory:</strong></p>
+          <div style={mono}>%APPDATA%\aic\uuid</div>
+          <div style={{ ...mono, marginTop: 4 }}>%APPDATA%\aic\update-usage.ps1</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Scheduled Task:</strong></p>
+          <div style={mono}>Task Scheduler → aic-usage-sync</div>
+        </>) : (<>
+          <p style={p}><strong>Config directory:</strong></p>
+          <div style={mono}>~/.config/aic/uuid</div>
+          <div style={{ ...mono, marginTop: 4 }}>~/.config/aic/update-usage.sh</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>macOS — launchd agent:</strong></p>
+          <div style={mono}>~/Library/LaunchAgents/com.aic.usage-sync.plist</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Log file (macOS):</strong></p>
+          <div style={mono}>/tmp/aic-usage-sync.log</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Linux — cron entry:</strong></p>
+          <div style={mono}>*/15 * * * * bash ~/.config/aic/update-usage.sh</div>
+        </>)}
+
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#e05252", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 20, marginBottom: 12 }}>How to remove everything manually</div>
+
+        {isWin ? (<>
+          <p style={p}><strong>1. Remove the scheduled task:</strong></p>
+          <div style={mono}>Unregister-ScheduledTask -TaskName "aic-usage-sync" -Confirm:$false</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>2. Delete the config folder:</strong></p>
+          <div style={mono}>Remove-Item -Recurse -Force "$env:APPDATA\aic"</div>
+        </>) : (<>
+          <p style={p}><strong>macOS — stop and remove launchd agent:</strong></p>
+          <div style={mono}>launchctl unload ~/Library/LaunchAgents/com.aic.usage-sync.plist</div>
+          <div style={{ ...mono, marginTop: 4 }}>rm ~/Library/LaunchAgents/com.aic.usage-sync.plist</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Linux — remove cron entry:</strong></p>
+          <div style={mono}>crontab -l | grep -v "aic/update-usage.sh" | crontab -</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Delete config files (macOS &amp; Linux):</strong></p>
+          <div style={mono}>rm -rf ~/.config/aic</div>
+          <p style={{ ...p, marginTop: 8 }}><strong>Delete log file (macOS):</strong></p>
+          <div style={mono}>rm -f /tmp/aic-usage-sync.log</div>
+        </>)}
+
+        <p style={{ ...p, marginTop: 12 }}><strong>Clear browser storage:</strong> open your browser's developer tools → Application → Local Storage → delete all <code>aic_</code> keys, or clear everything for this site.</p>
+
+        <div style={{ marginTop: 20, padding: "10px 14px", background: "#f4f5fb", borderRadius: 8, fontSize: "0.75rem", color: "#888" }}>
+          Or run the uninstall script which does all of the above automatically — see the README or the sync setup page.
+        </div>
       </div>
     </div>
   );
@@ -454,6 +533,7 @@ export default function App() {
   const teamCreateMatch = path === "/team";
   const teamJoinMatch = path.match(/^\/team\/([^/]+)\/join$/);
   const teamViewMatch = path.match(/^\/team\/([^/]+)$/);
+  if (path === "/privacy") return <PrivacyPage />;
   if (teamCreateMatch) return <TeamCreate />;
   if (teamJoinMatch) return <TeamJoin teamId={teamJoinMatch[1]} />;
   if (teamViewMatch) return <TeamView teamId={teamViewMatch[1]} />;
