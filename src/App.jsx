@@ -773,6 +773,7 @@ export default function App() {
   if (teamViewMatch) return <TeamView teamId={teamViewMatch[1]} />;
 
   const wide = useWide(480);
+  const panelsOnSide = useWide(900);
 
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -1111,9 +1112,13 @@ export default function App() {
           ))}
         </div>
 
+        {/* Inline panels on mobile/tablet */}
+        {!panelsOnSide && teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
+
       </div>
 
-      {teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
+      {/* Absolute side panels on desktop only */}
+      {panelsOnSide && teamData && teamData.members.length > 0 && <TeamSidePanels members={teamData.members} today={today} />}
 
       {showAutoModal && <AutoModal onClose={() => { setShowAutoModal(false); if (isAutoRoute) window.location.href = "/"; }} />}
 
