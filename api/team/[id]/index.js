@@ -1,16 +1,17 @@
 const { put, list } = require('@vercel/blob');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ENV = process.env.VERCEL_ENV === 'production' ? '' : `${process.env.VERCEL_ENV || 'development'}/`;
 
 async function getTeam(id) {
-  const { blobs } = await list({ prefix: `teams/${id}.json`, limit: 1 });
+  const { blobs } = await list({ prefix: `${ENV}teams/${id}.json`, limit: 1 });
   if (!blobs.length) return null;
   const r = await fetch(blobs[0].url);
   return r.json();
 }
 
 async function saveTeam(id, team) {
-  await put(`teams/${id}.json`, JSON.stringify(team), {
+  await put(`${ENV}teams/${id}.json`, JSON.stringify(team), {
     access: 'public',
     addRandomSuffix: false,
     contentType: 'application/json',
@@ -19,7 +20,7 @@ async function saveTeam(id, team) {
 
 async function getMemberUsage(uuid) {
   try {
-    const { blobs } = await list({ prefix: `usage/${uuid}.json`, limit: 1 });
+    const { blobs } = await list({ prefix: `${ENV}usage/${uuid}.json`, limit: 1 });
     if (!blobs.length) return null;
     const r = await fetch(blobs[0].url);
     return r.json();

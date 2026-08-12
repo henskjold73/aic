@@ -1,5 +1,7 @@
 const { put, list } = require('@vercel/blob');
 
+const ENV = process.env.VERCEL_ENV === 'production' ? '' : `${process.env.VERCEL_ENV || 'development'}/`;
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
@@ -13,7 +15,7 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'invalid uuid' });
   }
 
-  const blobPath = `usage/${uuid}.json`;
+  const blobPath = `${ENV}usage/${uuid}.json`;
 
   async function getExisting() {
     const { blobs } = await list({ prefix: blobPath, limit: 1 });

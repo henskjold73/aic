@@ -1,3 +1,4 @@
+$ScriptVersion = "1.0.0"
 $DB = "$env:USERPROFILE\.copilot\session-store.db"
 $UUID_FILE = "$env:APPDATA\aic\uuid"
 $API = "https://aic-jade.vercel.app/api/usage"
@@ -38,7 +39,7 @@ $inputTokens = $parts[2]
 $outputTokens = $parts[3]
 $updatedAt = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
 
-$payload = "{`"month`":`"$month`",`"aiu`":$aiu,`"input_tokens`":$inputTokens,`"output_tokens`":$outputTokens,`"updated_at`":`"$updatedAt`"}"
+$payload = "{`"month`":`"$month`",`"aiu`":$aiu,`"input_tokens`":$inputTokens,`"output_tokens`":$outputTokens,`"script_version`":`"$ScriptVersion`",`"updated_at`":`"$updatedAt`"}"
 
 try {
     $response = Invoke-RestMethod -Uri "$API/$uuid" -Method POST -Body $payload -ContentType "application/json"

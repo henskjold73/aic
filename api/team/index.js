@@ -1,5 +1,7 @@
 const { put } = require('@vercel/blob');
 
+const ENV = process.env.VERCEL_ENV === 'production' ? '' : `${process.env.VERCEL_ENV || 'development'}/`;
+
 // POST /api/team — create a new team
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,7 +17,7 @@ module.exports = async function handler(req, res) {
     const id = crypto.randomUUID();
     const team = { id, name, members: [], created_at: new Date().toISOString() };
 
-    await put(`teams/${id}.json`, JSON.stringify(team), {
+    await put(`${ENV}teams/${id}.json`, JSON.stringify(team), {
       access: 'public',
       addRandomSuffix: false,
       contentType: 'application/json',

@@ -795,6 +795,12 @@ export default function App() {
             </label>
           </div>
 
+          {syncData?.script_version && syncData.script_version !== __CURRENT_SCRIPT_VERSION__ && (
+            <div style={{ background: "#fff8e6", border: "1px solid #f5d97a", borderRadius: 8, padding: "8px 12px", marginBottom: 10, fontSize: "0.75rem", color: "#7a5c00" }}>
+              Your sync script is out of date (v{syncData.script_version} → v{__CURRENT_SCRIPT_VERSION__}). Re-run the install script to update.
+            </div>
+          )}
+
           {syncData && (
             <div style={{ display: "flex", gap: 8, marginBottom: 12, fontSize: "0.7rem", color: "#888" }}>
               <div style={statBox}>

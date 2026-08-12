@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPT_VERSION="1.0.0"
 DB="$HOME/.copilot/session-store.db"
 UUID_FILE="$HOME/.config/aic/uuid"
 API="https://aic-jade.vercel.app/api/usage"
@@ -36,6 +37,7 @@ PAYLOAD=$(cat <<EOF
   "aiu": $aiu,
   "input_tokens": $input_tokens,
   "output_tokens": $output_tokens,
+  "script_version": "$SCRIPT_VERSION",
   "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
