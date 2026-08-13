@@ -5,6 +5,7 @@ import type {
   Team,
   TeamCreateResponse,
   TeamJoinResponse,
+  TeamListResponse,
   UsageHistoryRecord,
   UsageRecord,
   Uuid,
@@ -103,4 +104,14 @@ export function joinTeam(
 /** Team metadata plus every member's current-month usage. */
 export function fetchTeam(teamId: Uuid): Promise<Team> {
   return request<Team>(noCache(`/api/team/${teamId}`));
+}
+
+/** Every team a sync uuid currently belongs to. */
+export function fetchMyTeams(uuid: Uuid): Promise<TeamListResponse> {
+  return request<TeamListResponse>(noCache(`/api/team?uuid=${uuid}`));
+}
+
+/** Remove the current user from a team. */
+export function leaveTeam(teamId: Uuid, uuid: Uuid): Promise<ApiOk> {
+  return request<ApiOk>(`/api/team/${teamId}/leave`, postJson({ uuid }));
 }

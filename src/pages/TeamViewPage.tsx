@@ -2,7 +2,7 @@ import { useEffect, useState, type JSX } from "react";
 import { BuildStamp } from "@/components/BuildStamp";
 import { MemberRow } from "@/components/MemberRow";
 import { useWide } from "@/hooks/useWide";
-import { fetchTeam } from "@/lib/api";
+import { fetchTeam, leaveTeam } from "@/lib/api";
 import { COLORS, offsetColor } from "@/lib/constants";
 import { monthKey } from "@/lib/date";
 import {
@@ -11,6 +11,7 @@ import {
   sortByUsage,
   toFlatMembers,
 } from "@/lib/members";
+import { getSyncUuid, removeTeamId } from "@/lib/storage";
 import { backLink, btnSecondary, card, FONT_STACK, pageWrap } from "@/styles";
 import type { Team, Uuid } from "@/types";
 
@@ -32,8 +33,24 @@ const columnHeading = (color: string) => ({
 export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [leaving, setLeaving] = useState<boolean>(false);
   const wide = useWide(600);
   const currentMonth = monthKey();
+
+  async function leave(): Promise<void> {
+    if (!window.confirm(`Leave ${team?.name ?? "this team"}?`)) return;
+
+    setLeaving(true);
+    removeTeamId(teamId);
+    const uuid = getSyncUuid();
+    try {
+      if (uuid) await leaveTeam(teamId, uuid);
+    } catch {
+      /* membership is already removed locally; the server will reconcile later */
+    } finally {
+      window.location.href = "/";
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -105,9 +122,25 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               {new Date().toLocaleString("default", { month: "long", year: "numeric" })}
             </div>
           </div>
-          <a href="/" style={backLink}>
-            Back
-          </a>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={() => void leave()}
+              disabled={leaving}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                fontSize: "0.75rem",
+                color: COLORS.faint,
+                cursor: leaving ? "default" : "pointer",
+              }}
+            >
+              {leaving ? "Leaving…" : "Leave team"}
+            </button>
+            <a href="/" style={backLink}>
+              Back
+            </a>
+          </div>
         </div>
 
         <div

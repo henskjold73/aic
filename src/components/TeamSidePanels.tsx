@@ -2,15 +2,18 @@ import type { CSSProperties, JSX, ReactNode } from "react";
 import { useWide } from "@/hooks/useWide";
 import { COLORS, offsetColor } from "@/lib/constants";
 import { enrichMembers, sortByBudgetProximity, sortByUsage } from "@/lib/members";
-import { getTeamId } from "@/lib/storage";
 import { FONT_STACK } from "@/styles";
-import type { FlatMember } from "@/types";
+import type { FlatMember, Uuid } from "@/types";
 
 export interface TeamSidePanelsProps {
+  /** Team these members belong to, used for the "View team" link. */
+  teamId: Uuid;
   /** Members with current-month usage. Must be non-empty. */
   members: readonly FlatMember[];
   /** Reference date used for pace calculations. */
   today: Date;
+  /** Renders as a floating side panel instead of an inline stacked block. */
+  floating?: boolean;
 }
 
 const panelBase: CSSProperties = {
@@ -55,15 +58,16 @@ const panelValue = (color: string): CSSProperties => ({
  * on narrow ones.
  */
 export function TeamSidePanels({
+  teamId,
   members,
   today,
+  floating = true,
 }: TeamSidePanelsProps): JSX.Element | null {
-  const wide = useWide(900);
+  const wide = useWide(900) && floating;
 
   const enriched = enrichMembers(members, today);
   const topUser = sortByUsage(enriched)[0];
   const closestToBudget = sortByBudgetProximity(enriched)[0];
-  const teamId = getTeamId();
 
   if (!topUser) return null;
 

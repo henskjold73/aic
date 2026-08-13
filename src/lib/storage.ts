@@ -3,7 +3,9 @@ import type { Uuid } from "@/types";
 /** Every localStorage key this app owns. */
 export const STORAGE_KEYS = {
   syncUuid: "aic_sync_uuid",
+  /** @deprecated superseded by {@link STORAGE_KEYS.teamIds}; kept for migration. */
   teamId: "aic_team_id",
+  teamIds: "aic_team_ids",
   monthlyBudget: "aic_monthly",
   usedAiu: "aic_used",
 } as const;
@@ -47,13 +49,50 @@ export function clearSyncUuid(): void {
   remove(STORAGE_KEYS.syncUuid);
 }
 
-/** The team the user most recently created or joined. */
-export function getTeamId(): Uuid | null {
-  return read(STORAGE_KEYS.teamId);
+/**
+ * Every team the user has created or joined, most-recently-added last.
+ *
+ * Migrates the legacy single-team key (`aic_team_id`) into this list the
+ * first time it's read, then removes it.
+ */
+export function getTeamIds(): Uuid[] {
+  const legacy = read(STORAGE_KEYS.teamId);
+  if (legacy) {
+    remove(STORAGE_KEYS.teamId);
+    addTeamId(legacy);
+  }
+
+  const raw = read(STORAGE_KEYS.teamIds);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is Uuid => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
-export function setTeamId(teamId: Uuid): void {
-  write(STORAGE_KEYS.teamId, teamId);
+export function addTeamId(teamId: Uuid): void {
+  const ids = getTeamIdsRaw();
+  if (ids.includes(teamId)) return;
+  write(STORAGE_KEYS.teamIds, JSON.stringify([...ids, teamId]));
+}
+
+export function removeTeamId(teamId: Uuid): void {
+  const ids = getTeamIdsRaw().filter((id) => id !== teamId);
+  write(STORAGE_KEYS.teamIds, JSON.stringify(ids));
+}
+
+/** Like {@link getTeamIds} but without the legacy-key migration side effect. */
+function getTeamIdsRaw(): Uuid[] {
+  const raw = read(STORAGE_KEYS.teamIds);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is Uuid => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Monthly AIU budget as the raw input string, so the field stays editable. */

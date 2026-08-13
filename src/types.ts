@@ -122,6 +122,20 @@ export interface TeamJoinResponse {
   team_name: string;
 }
 
+/** Minimal team info, as returned by `GET /api/team?uuid=`. */
+export interface TeamSummary {
+  id: Uuid;
+  name: string;
+}
+
+/** Response of `GET /api/team?uuid=`. */
+export type TeamListResponse = TeamSummary[];
+
+/** Body accepted by `POST /api/team/[id]/leave`. */
+export interface TeamLeaveBody {
+  uuid: Uuid;
+}
+
 /** Uniform error envelope returned by every handler on failure. */
 export interface ApiError {
   error: string;

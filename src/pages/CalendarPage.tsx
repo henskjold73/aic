@@ -4,16 +4,18 @@ import { AutoModal } from "@/components/AutoModal";
 import { BuildStamp } from "@/components/BuildStamp";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { TeamSidePanels } from "@/components/TeamSidePanels";
-import { useTeamSync } from "@/hooks/useTeamSync";
+import { TopNav } from "@/components/TopNav";
+import { useTeamsSync } from "@/hooks/useTeamSync";
 import { useUsageSync } from "@/hooks/useUsageSync";
 import { useWide } from "@/hooks/useWide";
-import { patchBudget } from "@/lib/api";
+import { leaveTeam, patchBudget } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
 import { countWorkdays, daysInMonth, MONTH_NAMES, totalWorkdays } from "@/lib/date";
 import { computeInsight } from "@/lib/members";
 import {
   getMonthlyBudget,
   getSyncUuid,
+  removeTeamId,
   setMonthlyBudget as persistMonthlyBudget,
 } from "@/lib/storage";
 import { FONT_STACK, navBtn, panel } from "@/styles";
@@ -22,14 +24,6 @@ export interface CalendarPageProps {
   /** Open the auto-sync modal on mount, used by the `/auto` route. */
   openSyncModal?: boolean;
 }
-
-const linkBtn = {
-  ...navBtn,
-  textDecoration: "none",
-  fontSize: "0.75rem",
-  fontWeight: 600,
-  color: COLORS.primary,
-} as const;
 
 /** `/` — the workday calendar with AIC budget tracking and team panels. */
 export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.Element {
@@ -43,12 +37,22 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const [monthlyBudget, setMonthlyBudget] = useState<string>(() => getMonthlyBudget());
   const [showAutoModal, setShowAutoModal] = useState<boolean>(openSyncModal);
 
-  const team = useTeamSync();
-  const teamRefresh = team.refresh;
-  const onSynced = useCallback(() => teamRefresh(), [teamRefresh]);
+  const teamsSync = useTeamsSync();
+  const teamsRefresh = teamsSync.refresh;
+  const onSynced = useCallback(() => teamsRefresh(), [teamsRefresh]);
   const usage = useUsageSync(onSynced);
 
   const hasSyncUuid = getSyncUuid() !== null;
+
+  const handleLeaveTeam = useCallback(
+    (teamId: string) => {
+      removeTeamId(teamId);
+      teamsRefresh();
+      const uuid = getSyncUuid();
+      if (uuid) leaveTeam(teamId, uuid).catch(() => {});
+    },
+    [teamsRefresh],
+  );
 
   const updateMonthlyBudget = useCallback((value: string): void => {
     setMonthlyBudget(value);
@@ -112,7 +116,9 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
     ["Progress", `${pctElapsed.toFixed(1)}%`],
   ];
 
-  const showTeamPanels = team.members !== null && team.members.length > 0;
+  const teamsWithMembers = teamsSync.teams.filter(
+    (team) => team.members !== null && team.members.length > 0,
+  );
 
   return (
     <div
@@ -129,6 +135,8 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
       <div
         style={{ fontFamily: FONT_STACK, width: "100%", maxWidth: 480, color: COLORS.ink }}
       >
+        <TopNav teams={teamsSync.teams} onLeaveTeam={handleLeaveTeam} />
+
         {/* Header */}
         <div
           style={{
@@ -144,17 +152,9 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
           <div style={{ fontSize: "1.3rem", fontWeight: 700, letterSpacing: -0.5 }}>
             {MONTH_NAMES[viewMonth]} {viewYear}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <a href="/team" style={linkBtn}>
-              Team
-            </a>
-            <a href="/report" style={linkBtn}>
-              Report
-            </a>
-            <button onClick={nextMonth} style={navBtn} aria-label="Next month">
-              →
-            </button>
-          </div>
+          <button onClick={nextMonth} style={navBtn} aria-label="Next month">
+            →
+          </button>
         </div>
 
         {/* Workday progress */}
@@ -245,13 +245,24 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
           ))}
         </div>
 
-        {!panelsOnSide && showTeamPanels && team.members && (
-          <TeamSidePanels members={team.members} today={today} />
-        )}
+        {(!panelsOnSide || teamsWithMembers.length > 1) &&
+          teamsWithMembers.map((team) => (
+            <TeamSidePanels
+              key={team.id}
+              teamId={team.id}
+              members={team.members!}
+              today={today}
+              floating={false}
+            />
+          ))}
       </div>
 
-      {panelsOnSide && showTeamPanels && team.members && (
-        <TeamSidePanels members={team.members} today={today} />
+      {panelsOnSide && teamsWithMembers.length === 1 && (
+        <TeamSidePanels
+          teamId={teamsWithMembers[0].id}
+          members={teamsWithMembers[0].members!}
+          today={today}
+        />
       )}
 
       {showAutoModal && (

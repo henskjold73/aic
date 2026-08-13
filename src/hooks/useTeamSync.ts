@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchTeam } from "@/lib/api";
+import { fetchMyTeams, fetchTeam } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import { toFlatMembers } from "@/lib/members";
-import { getTeamId } from "@/lib/storage";
-import type { FlatMember } from "@/types";
+import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
+import type { FlatMember, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -14,21 +14,34 @@ const POLL_INTERVAL_MS = 5 * 60 * 1000;
  */
 const EXPECTED_SYNC_INTERVAL_MS = (15 * 60 + 20) * 1000;
 
-export interface TeamSync {
+/** One joined team, with its current-month roster once loaded. */
+export interface TeamSyncEntry {
+  id: Uuid;
+  name: string;
   /** Members with usage for the current month, or `null` before the first load. */
   members: FlatMember[] | null;
-  /** Force an immediate refetch. */
+}
+
+export interface TeamsSync {
+  /** Every team this browser knows it has joined, in join order. */
+  teams: TeamSyncEntry[];
+  /** Force an immediate refetch of every joined team. */
   refresh: () => void;
 }
 
 /**
- * Poll the user's team and keep its current-month members in state.
+ * Poll every team the user has joined and keep each one's current-month
+ * roster in state.
  *
- * In addition to a fixed poll, this schedules targeted refetches timed to each
- * member's next expected sync so the leaderboard stays close to live.
+ * If a sync UUID is set, this also reconciles the locally remembered team
+ * list against the server (covers teams joined from another browser) before
+ * fetching rosters.
+ *
+ * In addition to a fixed poll, this schedules targeted refetches timed to
+ * each member's next expected sync so the leaderboards stay close to live.
  */
-export function useTeamSync(): TeamSync {
-  const [members, setMembers] = useState<FlatMember[] | null>(null);
+export function useTeamsSync(): TeamsSync {
+  const [teams, setTeams] = useState<TeamSyncEntry[]>([]);
   const pendingTimeouts = useRef<number[]>([]);
 
   const clearPending = useCallback((): void => {
@@ -37,29 +50,49 @@ export function useTeamSync(): TeamSync {
   }, []);
 
   const refresh = useCallback((): void => {
-    const teamId = getTeamId();
-    if (!teamId) return;
+    const uuid = getSyncUuid();
+    const reconciled = uuid
+      ? fetchMyTeams(uuid)
+          .then((serverTeams) => {
+            for (const team of serverTeams) addTeamId(team.id);
+          })
+          .catch(() => {
+            /* server unreachable — fall back to the locally known list */
+          })
+      : Promise.resolve();
 
-    fetchTeam(teamId)
-      .then((team) => {
-        const flat = toFlatMembers(team.members, monthKey());
-        setMembers(flat);
+    reconciled.then(() => {
+      const ids = getTeamIds();
+      if (ids.length === 0) {
+        setTeams([]);
+        return;
+      }
 
-        clearPending();
-        const now = Date.now();
-        for (const member of flat) {
-          const elapsed = now - new Date(member.usage.updated_at).getTime();
-          const msUntilNextSync = EXPECTED_SYNC_INTERVAL_MS - elapsed;
-          if (msUntilNextSync > 0) {
-            pendingTimeouts.current.push(
-              window.setTimeout(() => refresh(), msUntilNextSync),
-            );
-          }
-        }
-      })
-      .catch(() => {
-        /* team unavailable — keep showing the last known roster */
+      clearPending();
+      const now = Date.now();
+
+      Promise.all(
+        ids.map((id) =>
+          fetchTeam(id)
+            .then((team): TeamSyncEntry => {
+              const flat = toFlatMembers(team.members, monthKey());
+              for (const member of flat) {
+                const elapsed = now - new Date(member.usage.updated_at).getTime();
+                const msUntilNextSync = EXPECTED_SYNC_INTERVAL_MS - elapsed;
+                if (msUntilNextSync > 0) {
+                  pendingTimeouts.current.push(
+                    window.setTimeout(() => refresh(), msUntilNextSync),
+                  );
+                }
+              }
+              return { id, name: team.name, members: flat };
+            })
+            .catch(() => null),
+        ),
+      ).then((results) => {
+        setTeams(results.filter((entry): entry is TeamSyncEntry => entry !== null));
       });
+    });
   }, [clearPending]);
 
   useEffect(() => {
@@ -71,5 +104,5 @@ export function useTeamSync(): TeamSync {
     };
   }, [refresh, clearPending]);
 
-  return { members, refresh };
+  return { teams, refresh };
 }

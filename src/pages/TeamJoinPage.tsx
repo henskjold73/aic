@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import { joinTeam } from "@/lib/api";
 import { COLORS, isUuid, syncCommands } from "@/lib/constants";
-import { getSyncUuid, setSyncUuid, setTeamId } from "@/lib/storage";
+import { addTeamId, getSyncUuid, setSyncUuid } from "@/lib/storage";
 import { backLink, btnPrimary, card, inputStyle, monoBlock, pageWrap } from "@/styles";
 import type { Uuid } from "@/types";
 
@@ -52,7 +52,7 @@ export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
       setTeamName(result.team_name);
       setStatus("joined");
       setSyncUuid(trimmedUuid);
-      setTeamId(teamId);
+      addTeamId(teamId);
     } catch {
       setStatus("error");
     }

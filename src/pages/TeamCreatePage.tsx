@@ -1,16 +1,28 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import { createTeam } from "@/lib/api";
-import { COLORS } from "@/lib/constants";
-import { setTeamId } from "@/lib/storage";
+import { COLORS, isUuid } from "@/lib/constants";
+import { addTeamId } from "@/lib/storage";
 import { backLink, btnPrimary, btnSecondary, card, inputStyle, pageWrap } from "@/styles";
 import type { Uuid } from "@/types";
 
-/** `/team` — create a team and share its join link. */
+/** Extract a team id from a bare UUID or a pasted join/view link. */
+function parseTeamId(input: string): Uuid | null {
+  const trimmed = input.trim();
+  if (isUuid(trimmed)) return trimmed;
+
+  const match = /\/team\/([0-9a-f-]{36})/i.exec(trimmed);
+  return match?.[1] && isUuid(match[1]) ? match[1] : null;
+}
+
+/** `/team` — create a team, or join an existing one by id/link. */
 export function TeamCreatePage(): JSX.Element {
   const [name, setName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [teamId, setCreatedTeamId] = useState<Uuid | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [joinInput, setJoinInput] = useState<string>("");
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   async function create(): Promise<void> {
     setLoading(true);
@@ -18,12 +30,22 @@ export function TeamCreatePage(): JSX.Element {
     try {
       const team = await createTeam(name.trim() || "My Team");
       setCreatedTeamId(team.id);
-      setTeamId(team.id);
+      addTeamId(team.id);
     } catch {
       setError("Could not create the team — please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function goToJoin(): void {
+    const id = parseTeamId(joinInput);
+    if (!id) {
+      setJoinError("Paste a team ID or the join link a teammate shared with you.");
+      return;
+    }
+    setJoinError(null);
+    window.location.href = `/team/${id}/join`;
   }
 
   const joinUrl = teamId ? `${window.location.origin}/team/${teamId}/join` : null;
@@ -39,8 +61,53 @@ export function TeamCreatePage(): JSX.Element {
           team.
         </div>
 
+        {teamId === null && (
+          <div
+            style={{
+              background: COLORS.page,
+              borderRadius: 10,
+              padding: "12px 14px",
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, marginBottom: 6 }}>
+              Already have a team?
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={joinInput}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setJoinInput(event.target.value)
+                }
+                placeholder="Team ID or join link"
+                style={{ ...inputStyle, marginTop: 0, flex: 1 }}
+              />
+              <button onClick={goToJoin} style={btnSecondary}>
+                Join
+              </button>
+            </div>
+            {joinError && (
+              <div style={{ fontSize: "0.72rem", color: COLORS.bad, marginTop: 6 }}>
+                {joinError}
+              </div>
+            )}
+          </div>
+        )}
+
         {teamId === null || joinUrl === null ? (
           <>
+            {teamId === null && (
+              <div
+                style={{
+                  fontSize: "0.7rem",
+                  color: COLORS.faint,
+                  marginBottom: 10,
+                  fontWeight: 600,
+                }}
+              >
+                Or create a new one
+              </div>
+            )}
             <label
               style={{
                 fontSize: "0.75rem",
