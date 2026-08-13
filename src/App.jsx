@@ -224,56 +224,6 @@ function TeamView({ teamId }) {
   const maxAIU = Math.max(...enriched.map(m => m.aiu), 1);
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
-  function MemberRow({ m, i, accent, value, sub, budgetRatio }) {
-    let bar;
-    if (budgetRatio != null) {
-      // Bar: 0 = no usage (-100% off), 50% = on budget (0% off), 100% = 2x budget (+100% off)
-      const pct = Math.min((budgetRatio / 2) * 100, 100);
-      const barColor = offsetColor(budgetRatio);
-      bar = (
-        <div style={{ position: "relative", background: "#eef0ff", borderRadius: 6, height: 6, overflow: "visible" }}>
-          {/* -30% threshold at 35% */}
-          <div style={{ position: "absolute", left: "35%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
-          {/* -10% threshold at 45% */}
-          <div style={{ position: "absolute", left: "45%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
-          {/* on budget (0% off) at 50% */}
-          <div style={{ position: "absolute", left: "50%", top: -1, width: 2, height: 8, background: "#3ab87a", borderRadius: 1, zIndex: 1, opacity: 0.6 }} />
-          {/* +10% threshold at 55% */}
-          <div style={{ position: "absolute", left: "55%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
-          {/* +30% threshold at 65% */}
-          <div style={{ position: "absolute", left: "65%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
-          <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 6, transition: "width 0.3s" }} />
-        </div>
-      );
-    } else {
-      bar = (
-        <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
-          <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: `linear-gradient(90deg,${accent},${accent}99)`, borderRadius: 6 }} />
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: "1px solid #e8eaff" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 24, height: 24, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
-            <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.88rem", fontWeight: 700, color: accent }}>{value}</div>
-            {sub && <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{sub}</div>}
-          </div>
-        </div>
-        {bar}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced <LiveAgo iso={m.usage.updated_at} /></div>
-          {budgetRatio != null ? (() => { const off = Math.round((budgetRatio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={pageWrap}>
       <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: "100%", maxWidth: 560, color: "#1a1a2e" }}>
@@ -292,7 +242,7 @@ function TeamView({ teamId }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {byUsage.map((m, i) => (
                 <MemberRow key={m.uuid} m={m} i={i} accent="#4f6ef7"
-                  value={`${m.aiu.toFixed(1)} AIU`} />
+                  value={`${m.aiu.toFixed(1)} AIU`} maxAIU={maxAIU} month={currentMonth} />
               ))}
             </div>
           </div>
@@ -307,7 +257,7 @@ function TeamView({ teamId }) {
                     accent={offsetColor(m.ratio)}
                     value={`${m.actualPerDay.toFixed(1)} / ${m.allowedPerDay.toFixed(1)}`}
                     sub="actual / allowed per day"
-                    budgetRatio={m.ratio} />
+                    budgetRatio={m.ratio} maxAIU={maxAIU} month={currentMonth} />
                 ))}
               </div>
             </div>
@@ -333,6 +283,127 @@ function TeamView({ teamId }) {
       <div style={{ position: "fixed", bottom: 8, right: 10, fontSize: "0.6rem", color: "#999", fontFamily: "monospace", pointerEvents: "none" }}>
         {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
       </div>
+    </div>
+  );
+}
+
+// ── Daily usage chart ────────────────────────────────────────────
+function DailyUsageChart({ uuid, budget, month }) {
+  const [days, setDays] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/usage/${uuid}/days?month=${month}`)
+      .then(r => r.json())
+      .then(data => setDays(Array.isArray(data) ? data : []))
+      .catch(() => setDays([]));
+  }, [uuid, month]);
+
+  if (!days) return (
+    <div style={{ fontSize: '0.68rem', color: '#aaa', textAlign: 'center', padding: '10px 0' }}>Loading…</div>
+  );
+  if (!days.length) return (
+    <div style={{ fontSize: '0.68rem', color: '#aaa', textAlign: 'center', padding: '10px 0' }}>No daily data yet — sync script v1.2.0+ required</div>
+  );
+
+  const [y, m] = month.split('-').map(Number);
+  const totalDays = new Date(y, m, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === y && today.getMonth() + 1 === m;
+  const lastDay = isCurrentMonth ? today.getDate() : totalDays;
+  const dailyBudget = budget ? budget / totalDays : null;
+
+  const dayMap = {};
+  days.forEach(d => { dayMap[new Date(d.date).getDate()] = d.aiu; });
+
+  const maxVal = Math.max(...Object.values(dayMap), dailyBudget || 0, 1);
+
+  const W = 280, H = 52;
+  const gap = 1.5;
+  const barW = (W - gap * (lastDay - 1)) / lastDay;
+  const budgetY = dailyBudget ? H - (dailyBudget / maxVal) * H : null;
+
+  return (
+    <div style={{ marginTop: 10, borderTop: '1px solid #f0f1ff', paddingTop: 10 }}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
+        {Array.from({ length: lastDay }, (_, i) => {
+          const day = i + 1;
+          const aiu = dayMap[day] || 0;
+          const barH = Math.max((aiu / maxVal) * H, aiu > 0 ? 2 : 0);
+          const x = i * (barW + gap);
+          const isToday = isCurrentMonth && day === today.getDate();
+          const color = isToday ? '#4f6ef7'
+            : !aiu ? '#eef0ff'
+            : !dailyBudget ? '#4f6ef7'
+            : aiu > dailyBudget * 1.3 ? '#e05252'
+            : aiu > dailyBudget * 1.1 ? '#c4acf7'
+            : '#3ab87a';
+          return <rect key={day} x={x} y={H - barH} width={barW} height={barH || 0} rx={1.5} fill={color} />;
+        })}
+        {budgetY !== null && (
+          <line x1={0} y1={budgetY} x2={W} y2={budgetY} stroke="#e0953a" strokeWidth={1} strokeDasharray="3 3" opacity={0.8} />
+        )}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: '#bbb', marginTop: 3 }}>
+        <span>1</span>
+        <span style={{ color: '#aaa' }}>
+          {dailyBudget ? `— ${dailyBudget.toFixed(0)} AIU/day budget` : 'daily AIU'}
+        </span>
+        <span>{lastDay}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Member row ────────────────────────────────────────────────────
+function MemberRow({ m, i, accent, value, sub, budgetRatio, maxAIU, month }) {
+  const [expanded, setExpanded] = useState(false);
+
+  let bar;
+  if (budgetRatio != null) {
+    const pct = Math.min((budgetRatio / 2) * 100, 100);
+    const barColor = offsetColor(budgetRatio);
+    bar = (
+      <div style={{ position: "relative", background: "#eef0ff", borderRadius: 6, height: 6, overflow: "visible" }}>
+        <div style={{ position: "absolute", left: "35%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+        <div style={{ position: "absolute", left: "45%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+        <div style={{ position: "absolute", left: "50%", top: -1, width: 2, height: 8, background: "#3ab87a", borderRadius: 1, zIndex: 1, opacity: 0.6 }} />
+        <div style={{ position: "absolute", left: "55%", top: -1, width: 2, height: 8, background: "#4f6ef7", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+        <div style={{ position: "absolute", left: "65%", top: -1, width: 2, height: 8, background: "#e05252", borderRadius: 1, zIndex: 1, opacity: 0.4 }} />
+        <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 6, transition: "width 0.3s" }} />
+      </div>
+    );
+  } else {
+    bar = (
+      <div style={{ background: "#eef0ff", borderRadius: 6, height: 5, overflow: "hidden" }}>
+        <div style={{ width: `${(m.aiu / maxAIU) * 100}%`, height: "100%", background: `linear-gradient(90deg,${accent},${accent}99)`, borderRadius: 6 }} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{ background: "#fff", borderRadius: 10, padding: "12px 14px", border: `1px solid ${expanded ? '#c8d0f8' : '#e8eaff'}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+      onClick={() => setExpanded(e => !e)}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+          <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: 700, color: accent }}>{value}</div>
+            {sub && <div style={{ fontSize: "0.65rem", color: "#aaa" }}>{sub}</div>}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: '#bbb', userSelect: 'none' }}>{expanded ? '▲' : '▼'}</div>
+        </div>
+      </div>
+      {bar}
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+        <div style={{ fontSize: "0.65rem", color: "#aaa" }}>synced <LiveAgo iso={m.usage.updated_at} /></div>
+        {budgetRatio != null ? (() => { const off = Math.round((budgetRatio - 1) * 100); const abs = Math.abs(off); const color = abs <= 10 ? "#3ab87a" : abs <= 30 ? "#4f6ef7" : "#e05252"; return <div style={{ fontSize: "0.65rem", color }}>{off > 0 ? "+" : ""}{off}% off</div>; })() : null}
+      </div>
+      {expanded && <DailyUsageChart uuid={m.uuid} budget={m.budget} month={month} />}
     </div>
   );
 }
