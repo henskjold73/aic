@@ -1,0 +1,40 @@
+{
+  // ─────────────────────────────────────────────────────────────────
+  // Serverless-function TypeScript config.
+  //
+  // Vercel's Node builder walks up from each entrypoint looking for the
+  // nearest tsconfig.json, then parses it with the TypeScript version it
+  // bundles (currently 4.9). Every option below must therefore be valid in
+  // TS 4.9 — no `moduleResolution: "bundler"`, no `allowImportingTsExtensions`,
+  // no `verbatimModuleSyntax`. If TypeScript cannot parse an option it
+  // discards the setting, and the handlers get emitted as ESM into .js files
+  // that Node then loads as CommonJS, failing at invocation.
+  //
+  // This file is deliberately self-contained (no `extends`) so the builder
+  // never has to resolve a parent config containing newer syntax.
+  // ─────────────────────────────────────────────────────────────────
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["ES2021"],
+
+    /* The root package.json has no "type": "module", so Node loads the
+       emitted .js as CommonJS. Emit CommonJS to match. */
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "types": ["node"],
+
+    /* Strictness — mirrors the frontend config. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["**/*.ts", "../src/types.ts"]
+}

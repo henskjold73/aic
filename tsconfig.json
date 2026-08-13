@@ -1,4 +1,7 @@
 {
+  // Frontend (Vite) config. The serverless functions are type-checked by
+  // api/tsconfig.json instead — see the note in that file about the older
+  // TypeScript version Vercel's Node builder uses.
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
@@ -29,6 +32,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "api"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
