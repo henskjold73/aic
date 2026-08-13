@@ -4,6 +4,7 @@ import type {
   MonthKey,
   Team,
   TeamCreateResponse,
+  TeamDaysResponse,
   TeamJoinResponse,
   TeamListResponse,
   UsageHistoryRecord,
@@ -114,4 +115,9 @@ export function fetchMyTeams(uuid: Uuid): Promise<TeamListResponse> {
 /** Remove the current user from a team. */
 export function leaveTeam(teamId: Uuid, uuid: Uuid): Promise<ApiOk> {
   return request<ApiOk>(`/api/team/${teamId}/leave`, postJson({ uuid }));
+}
+
+/** Daily AIU summed across every member of a team, for one month. */
+export function fetchTeamDays(teamId: Uuid, month: MonthKey): Promise<TeamDaysResponse> {
+  return request<TeamDaysResponse>(noCache(`/api/team/${teamId}/days?month=${month}`));
 }

@@ -136,6 +136,15 @@ export interface TeamLeaveBody {
   uuid: Uuid;
 }
 
+/** One day of AIU usage summed across every member of a team. */
+export interface TeamDailyPoint {
+  date: DateKey;
+  aiu: number;
+}
+
+/** Response of `GET /api/team/[id]/days`. */
+export type TeamDaysResponse = TeamDailyPoint[];
+
 /** Uniform error envelope returned by every handler on failure. */
 export interface ApiError {
   error: string;

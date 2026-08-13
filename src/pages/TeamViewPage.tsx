@@ -1,6 +1,7 @@
 import { useState, type JSX } from "react";
 import { BuildStamp } from "@/components/BuildStamp";
 import { MemberRow } from "@/components/MemberRow";
+import { TeamCumulativeChart } from "@/components/TeamCumulativeChart";
 import { useTeamPoll } from "@/hooks/useTeamSync";
 import { useWide } from "@/hooks/useWide";
 import { leaveTeam } from "@/lib/api";
@@ -180,18 +181,24 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
             borderRadius: 10,
             padding: "10px 14px",
             border: `1px solid ${COLORS.border}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
             marginBottom: 12,
           }}
         >
-          <div style={{ fontSize: "0.78rem", color: COLORS.muted }}>
-            Team total this month
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ fontSize: "0.78rem", color: COLORS.muted }}>
+              Team total this month
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: 700, color: COLORS.primary }}>
+              {totalAiu.toFixed(1)} AIU
+            </div>
           </div>
-          <div style={{ fontSize: "1rem", fontWeight: 700, color: COLORS.primary }}>
-            {totalAiu.toFixed(1)} AIU
-          </div>
+          <TeamCumulativeChart teamId={teamId} month={currentMonth} />
         </div>
 
         <div
