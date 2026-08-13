@@ -3,7 +3,7 @@ import { fetchMyTeams, fetchTeam } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import { toFlatMembers } from "@/lib/members";
 import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
-import type { FlatMember, Uuid } from "@/types";
+import type { FlatMember, Team, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -13,6 +13,32 @@ const POLL_INTERVAL_MS = 5 * 60 * 1000;
  * member's next expected write so the UI updates as soon as new data lands.
  */
 const EXPECTED_SYNC_INTERVAL_MS = (15 * 60 + 20) * 1000;
+
+/**
+ * Schedule a targeted refetch for each member whose next expected sync
+ * hasn't happened yet, clearing whatever was previously pending first.
+ *
+ * Shared by {@link useTeamsSync} and {@link useTeamPoll} so both the home
+ * page's overview and the full team page stay live the same way.
+ */
+function scheduleMemberRefetches(
+  members: readonly { usage: { updated_at: string } | null }[],
+  pendingTimeouts: React.MutableRefObject<number[]>,
+  refetch: () => void,
+): void {
+  for (const id of pendingTimeouts.current) window.clearTimeout(id);
+  pendingTimeouts.current = [];
+
+  const now = Date.now();
+  for (const member of members) {
+    if (!member.usage) continue;
+    const elapsed = now - new Date(member.usage.updated_at).getTime();
+    const msUntilNextSync = EXPECTED_SYNC_INTERVAL_MS - elapsed;
+    if (msUntilNextSync > 0) {
+      pendingTimeouts.current.push(window.setTimeout(refetch, msUntilNextSync));
+    }
+  }
+}
 
 /** One joined team, with its current-month roster once loaded. */
 export interface TeamSyncEntry {
@@ -105,4 +131,56 @@ export function useTeamsSync(): TeamsSync {
   }, [refresh, clearPending]);
 
   return { teams, refresh };
+}
+
+export interface TeamPoll {
+  /** Team plus every member's current-month usage, or `null` before the first load. */
+  team: Team | null;
+  /** `true` until the first fetch settles. */
+  loading: boolean;
+  /** Force an immediate refetch. */
+  refresh: () => void;
+}
+
+/**
+ * Poll a single team's full detail — used by the `/team/:id` page, which
+ * (unlike the home page's overview) needs every member's usage, not just the
+ * flattened current-month figures.
+ *
+ * Same live-update strategy as {@link useTeamsSync}: a 5-minute baseline
+ * poll, plus a targeted refetch timed to each member's next expected sync.
+ */
+export function useTeamPoll(teamId: Uuid): TeamPoll {
+  const [team, setTeam] = useState<Team | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const pendingTimeouts = useRef<number[]>([]);
+
+  const clearPending = useCallback((): void => {
+    for (const id of pendingTimeouts.current) window.clearTimeout(id);
+    pendingTimeouts.current = [];
+  }, []);
+
+  const refresh = useCallback((): void => {
+    fetchTeam(teamId)
+      .then((data) => {
+        setTeam(data);
+        setLoading(false);
+        scheduleMemberRefetches(data.members, pendingTimeouts, refresh);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamId]);
+
+  useEffect(() => {
+    refresh();
+    const interval = window.setInterval(refresh, POLL_INTERVAL_MS);
+    return () => {
+      window.clearInterval(interval);
+      clearPending();
+    };
+  }, [refresh, clearPending]);
+
+  return { team, loading, refresh };
 }

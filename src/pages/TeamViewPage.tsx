@@ -1,8 +1,9 @@
-import { useEffect, useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 import { BuildStamp } from "@/components/BuildStamp";
 import { MemberRow } from "@/components/MemberRow";
+import { useTeamPoll } from "@/hooks/useTeamSync";
 import { useWide } from "@/hooks/useWide";
-import { fetchTeam, leaveTeam } from "@/lib/api";
+import { leaveTeam } from "@/lib/api";
 import { COLORS, offsetColor } from "@/lib/constants";
 import { monthKey } from "@/lib/date";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/lib/members";
 import { getSyncUuid, removeTeamId } from "@/lib/storage";
 import { backLink, btnSecondary, card, FONT_STACK, pageWrap } from "@/styles";
-import type { Team, Uuid } from "@/types";
+import type { Uuid } from "@/types";
 
 export interface TeamViewPageProps {
   /** Team to display, taken from the URL. */
@@ -31,8 +32,7 @@ const columnHeading = (color: string) => ({
 
 /** `/team/:id` — leaderboards for a team's current-month usage. */
 export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
-  const [team, setTeam] = useState<Team | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { team, loading } = useTeamPoll(teamId);
   const [leaving, setLeaving] = useState<boolean>(false);
   const wide = useWide(600);
   const currentMonth = monthKey();
@@ -51,22 +51,6 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
       window.location.href = "/";
     }
   }
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchTeam(teamId)
-      .then((data) => {
-        if (cancelled) return;
-        setTeam(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [teamId]);
 
   if (loading) {
     return (
