@@ -23,6 +23,17 @@ export interface CalendarGridProps {
 /** A calendar cell: a day number, or `null` for leading blanks. */
 type Cell = number | null;
 
+/**
+ * If `day` falls on a Saturday or Sunday, roll it forward to the following
+ * Monday. No usage accrues over the weekend, so the "run out" marker should
+ * never land there.
+ */
+function snapPastWeekend(year: number, month: number, day: number): number {
+  let snapped = day;
+  while (isWeekend(year, month, snapped)) snapped += 1;
+  return snapped;
+}
+
 function buildCells(year: number, month: number, totalDays: number): Cell[] {
   const firstWeekday = new Date(year, month, 1).getDay();
   // Convert Sunday-first (0–6) to Monday-first leading blanks.
@@ -52,7 +63,9 @@ export function CalendarGrid({
   const showBurn =
     isCurrentMonth && budget !== null && budget > 0 && dailyBurnRate !== null;
   const runOutDay =
-    showBurn && dailyBurnRate > 0 ? Math.ceil(budget / dailyBurnRate) : null;
+    showBurn && dailyBurnRate > 0
+      ? snapPastWeekend(year, month, Math.ceil(budget / dailyBurnRate))
+      : null;
 
   return (
     <>
