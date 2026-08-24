@@ -66,3 +66,42 @@ export function offsetColor(ratio: number): string {
   if (offsetPct <= 30) return COLORS.primary;
   return COLORS.bad;
 }
+
+/** Suffix scale used by {@link formatCompactNumber}, largest first. */
+const COMPACT_UNITS = [
+  { value: 1_000_000_000, suffix: "G" },
+  { value: 1_000_000, suffix: "M" },
+  { value: 1_000, suffix: "k" },
+] as const;
+
+/**
+ * Format a token count compactly: plain integers below 1000 (e.g. `99`,
+ * `999`), then one decimal place per unit above that with a trailing `.0`
+ * dropped (e.g. `1k`, `99k`, `0.1M`, `99M`, `0.1G`).
+ */
+export function formatCompactNumber(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+
+  if (abs < 1000) return `${sign}${Math.round(abs)}`;
+
+  for (let i = 0; i < COMPACT_UNITS.length; i++) {
+    const unit = COMPACT_UNITS[i];
+    if (abs < unit.value) continue;
+
+    let scaled = Math.round((abs / unit.value) * 10) / 10;
+    let suffix = unit.suffix;
+
+    // Rounding can push e.g. 999,999 to "1000k" — bump to the next unit up.
+    if (scaled >= 1000 && i > 0) {
+      const largerUnit = COMPACT_UNITS[i - 1];
+      scaled = Math.round((abs / largerUnit.value) * 10) / 10;
+      suffix = largerUnit.suffix;
+    }
+
+    const formatted = Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
+    return `${sign}${formatted}${suffix}`;
+  }
+
+  return `${sign}${Math.round(abs)}`;
+}

@@ -1,6 +1,6 @@
 import type { ChangeEvent, JSX } from "react";
 import { LiveAgo } from "@/components/LiveAgo";
-import { COLORS } from "@/lib/constants";
+import { COLORS, formatCompactNumber } from "@/lib/constants";
 import { inputStyle, panel, statBox } from "@/styles";
 import type { AicInsight, SyncStatus, UsageRecord } from "@/types";
 
@@ -159,14 +159,20 @@ export function AicPanel({
         >
           <div style={statBox}>
             <div>Input tokens</div>
-            <div style={{ fontWeight: 700, color: "#333" }}>
-              {usage.input_tokens.toLocaleString()}
+            <div
+              style={{ fontWeight: 700, color: "#333" }}
+              title={usage.input_tokens.toLocaleString()}
+            >
+              {formatCompactNumber(usage.input_tokens)}
             </div>
           </div>
           <div style={statBox}>
             <div>Output tokens</div>
-            <div style={{ fontWeight: 700, color: "#333" }}>
-              {usage.output_tokens.toLocaleString()}
+            <div
+              style={{ fontWeight: 700, color: "#333" }}
+              title={usage.output_tokens.toLocaleString()}
+            >
+              {formatCompactNumber(usage.output_tokens)}
             </div>
           </div>
           <div style={statBox}>
