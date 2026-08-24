@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type JSX } from "react";
+import { DailyUsageBars } from "@/components/DailyUsageChart";
 import { useWide } from "@/hooks/useWide";
 import { fetchUsageDays, fetchUsageHistory } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
@@ -123,6 +124,11 @@ export function ReportPage(): JSX.Element {
     if (selectedProject === ALL_PROJECTS) return days;
     return days.filter((day) => day.project === selectedProject);
   }, [days, selectedProject]);
+
+  const selectedMonthBudget = useMemo<number | null>(
+    () => history?.find((row) => row.month === selectedMonth)?.budget ?? null,
+    [history, selectedMonth],
+  );
 
   function exportHistoryCsv(): void {
     if (!history?.length) return;
@@ -342,32 +348,43 @@ export function ReportPage(): JSX.Element {
               collecting daily data.
             </div>
           ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={th}>Date</th>
-                    <th style={thRight}>AIU</th>
-                    {wide && <th style={thRight}>Input</th>}
-                    {wide && <th style={thRight}>Output</th>}
-                    {projects.length > 0 && <th style={th}>Project</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDays.map((row) => (
-                    <tr key={row.date}>
-                      <td style={td}>{row.date.slice(0, 10)}</td>
-                      <td style={tdRight}>{row.aiu.toFixed(2)}</td>
-                      {wide && <td style={tdRight}>{row.input_tokens.toLocaleString()}</td>}
-                      {wide && (
-                        <td style={tdRight}>{row.output_tokens.toLocaleString()}</td>
-                      )}
-                      {projects.length > 0 && <td style={td}>{row.project ?? "—"}</td>}
+            <>
+              <div style={{ padding: "14px 14px 4px" }}>
+                <DailyUsageBars
+                  days={filteredDays}
+                  budget={selectedMonthBudget}
+                  month={selectedMonth}
+                />
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Date</th>
+                      <th style={thRight}>AIU</th>
+                      {wide && <th style={thRight}>Input</th>}
+                      {wide && <th style={thRight}>Output</th>}
+                      {projects.length > 0 && <th style={th}>Project</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredDays.map((row) => (
+                      <tr key={row.date}>
+                        <td style={td}>{row.date.slice(0, 10)}</td>
+                        <td style={tdRight}>{row.aiu.toFixed(2)}</td>
+                        {wide && (
+                          <td style={tdRight}>{row.input_tokens.toLocaleString()}</td>
+                        )}
+                        {wide && (
+                          <td style={tdRight}>{row.output_tokens.toLocaleString()}</td>
+                        )}
+                        {projects.length > 0 && <td style={td}>{row.project ?? "—"}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
