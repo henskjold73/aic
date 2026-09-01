@@ -50,11 +50,11 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
 
     fetchUsage(uuid)
       .then((record) => {
+        setStatus("ok");
         if (record.month !== monthKey()) return;
         setUsedAiuState(String(Math.round(record.aiu)));
         persistUsedAiu(String(record.aiu));
         setUsage(record);
-        setStatus("ok");
         onSynced?.();
       })
       .catch(() => setStatus("error"));
