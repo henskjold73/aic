@@ -121,7 +121,7 @@ export function getMonthlyBudgetNumber(): number | null {
  */
 export function getUsedAiu(): string {
   const storedMonth = read(STORAGE_KEYS.usedAiuMonth);
-  if (storedMonth !== null && storedMonth !== monthKey()) return "";
+  if (storedMonth !== null && storedMonth !== monthKey()) return "0";
   return read(STORAGE_KEYS.usedAiu) ?? "";
 }
 
