@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchUsage, patchBudget } from "@/lib/api";
+import { ApiRequestError, fetchUsage, patchBudget } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import {
   getMonthlyBudgetNumber,
@@ -61,7 +61,16 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
         setUsage(record);
         onSynced?.();
       })
-      .catch(() => setStatus("error"));
+      .catch((err: unknown) => {
+        if (err instanceof ApiRequestError && err.status === 404) {
+          // UUID is valid but no data posted yet this month — sync is healthy.
+          setStatus("ok");
+          setUsedAiuState("0");
+          persistUsedAiu("0");
+        } else {
+          setStatus("error");
+        }
+      });
     // `onSynced` is intentionally excluded: callers pass a stable callback and
     // re-running on identity changes would restart the poll loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
