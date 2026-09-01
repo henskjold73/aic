@@ -1,3 +1,4 @@
+import { monthKey } from "@/lib/date";
 import type { Uuid } from "@/types";
 
 /** Every localStorage key this app owns. */
@@ -8,6 +9,8 @@ export const STORAGE_KEYS = {
   teamIds: "aic_team_ids",
   monthlyBudget: "aic_monthly",
   usedAiu: "aic_used",
+  /** The `YYYY-MM` month to which {@link STORAGE_KEYS.usedAiu} belongs. */
+  usedAiuMonth: "aic_used_month",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -110,11 +113,19 @@ export function getMonthlyBudgetNumber(): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** AIU used so far, as a raw input string. */
+/**
+ * AIU used so far, as a raw input string.
+ *
+ * Returns `""` when the stored value belongs to a different month, so stale
+ * figures from the previous month never bleed into a new month's calendar.
+ */
 export function getUsedAiu(): string {
+  const storedMonth = read(STORAGE_KEYS.usedAiuMonth);
+  if (storedMonth !== null && storedMonth !== monthKey()) return "";
   return read(STORAGE_KEYS.usedAiu) ?? "";
 }
 
 export function setUsedAiu(value: string): void {
   write(STORAGE_KEYS.usedAiu, value);
+  write(STORAGE_KEYS.usedAiuMonth, monthKey());
 }
