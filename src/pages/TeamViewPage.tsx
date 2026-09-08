@@ -223,8 +223,15 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                         </div>
                         <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
                       </div>
-                      <div style={{ fontSize: "0.88rem", fontWeight: 700, color }}>
-                        {m.aiu_today.toFixed(1)} AIU
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.88rem", fontWeight: 700, color }}>
+                          {m.aiu_today.toFixed(1)} AIU
+                        </div>
+                        {em?.allowedPerDay != null && (
+                          <div style={{ fontSize: "0.68rem", color: COLORS.faint }}>
+                            budget {em.allowedPerDay.toFixed(1)}/day
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

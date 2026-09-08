@@ -169,8 +169,17 @@ export function TeamSidePanels({
                 <span style={{ fontWeight: i === 0 ? 700 : 400, color: COLORS.ink }}>
                   {i + 1}. {m.name}
                 </span>
-                <span style={{ fontWeight: 700, color }}>
-                  {m.aiu_today.toFixed(1)}
+                <span style={{ textAlign: "right" }}>
+                  <span style={{ fontWeight: 700, color, display: "block" }}>
+                    {m.aiu_today.toFixed(1)}
+                  </span>
+                  {em?.allowedPerDay != null && (
+                    <span
+                      style={{ fontSize: "0.6rem", color: COLORS.faint, display: "block" }}
+                    >
+                      /{em.allowedPerDay.toFixed(1)} budget
+                    </span>
+                  )}
                 </span>
               </div>
             );
