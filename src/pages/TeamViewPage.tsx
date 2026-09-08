@@ -5,8 +5,8 @@ import { TeamCumulativeChart } from "@/components/TeamCumulativeChart";
 import { useTeamPoll } from "@/hooks/useTeamSync";
 import { useWide } from "@/hooks/useWide";
 import { leaveTeam } from "@/lib/api";
-import { COLORS, offsetColor } from "@/lib/constants";
-import { monthKey } from "@/lib/date";
+import { COLORS, offsetColor, todayColor } from "@/lib/constants";
+import { countWorkdays, monthKey, totalWorkdays } from "@/lib/date";
 import {
   enrichMembers,
   sortByBudgetProximity,
@@ -78,6 +78,11 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
   const byUsage = sortByUsage(enriched);
   const byDailyBudget = sortByBudgetProximity(enriched);
   const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
+
+  const today = new Date();
+  const totalWd = totalWorkdays(today.getFullYear(), today.getMonth());
+  const elapsedWd = countWorkdays(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  const remainingWd = Math.max(totalWd - elapsedWd, 1);
 
   const totalAiu = enriched.reduce((sum, member) => sum + member.aiu, 0);
   const maxAiu = Math.max(...enriched.map((member) => member.aiu), 1);
@@ -188,9 +193,15 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                 .filter((m) => m.aiu_today > 0)
                 .map((m, index) => {
                   const em = enrichedByUuid.get(m.uuid);
+                  const remainingBudget =
+                    em?.budget != null ? em.budget - em.aiu : null;
+                  const allowedToday =
+                    remainingBudget != null ? remainingBudget / remainingWd : null;
                   const ratio =
-                    em?.allowedPerDay != null ? m.aiu_today / em.allowedPerDay : null;
-                  const color = ratio !== null ? offsetColor(ratio) : COLORS.good;
+                    allowedToday != null && allowedToday > 0
+                      ? m.aiu_today / allowedToday
+                      : null;
+                  const color = ratio !== null ? todayColor(ratio) : COLORS.primary;
                   return (
                     <div
                       key={m.uuid}
@@ -227,9 +238,9 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                         <div style={{ fontSize: "0.88rem", fontWeight: 700, color }}>
                           {m.aiu_today.toFixed(1)} AIU
                         </div>
-                        {em?.allowedPerDay != null && (
+                        {allowedToday != null && (
                           <div style={{ fontSize: "0.68rem", color: COLORS.faint }}>
-                            budget {em.allowedPerDay.toFixed(1)}/day
+                            {allowedToday.toFixed(1)} left/day
                           </div>
                         )}
                       </div>

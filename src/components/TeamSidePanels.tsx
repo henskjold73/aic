@@ -1,6 +1,7 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
 import { useWide } from "@/hooks/useWide";
-import { COLORS, offsetColor } from "@/lib/constants";
+import { COLORS, offsetColor, todayColor } from "@/lib/constants";
+import { countWorkdays, totalWorkdays } from "@/lib/date";
 import { enrichMembers, sortByBudgetProximity, sortByUsage } from "@/lib/members";
 import { FONT_STACK } from "@/styles";
 import type { FlatMember, TeamTodayMember, Uuid } from "@/types";
@@ -73,6 +74,10 @@ export function TeamSidePanels({
   const closestToBudget = sortByBudgetProximity(enriched)[0];
   const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
   const todayTop3 = (todayLeaderboard ?? []).filter((m) => m.aiu_today > 0).slice(0, 3);
+
+  const totalWd = totalWorkdays(today.getFullYear(), today.getMonth());
+  const elapsedWd = countWorkdays(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  const remainingWd = Math.max(totalWd - elapsedWd, 1);
 
   if (!topUser) return null;
 
@@ -153,9 +158,15 @@ export function TeamSidePanels({
           </div>
           {todayTop3.map((m, i) => {
             const em = enrichedByUuid.get(m.uuid);
+            const remainingBudget =
+              em?.budget != null ? em.budget - em.aiu : null;
+            const allowedToday =
+              remainingBudget != null ? remainingBudget / remainingWd : null;
             const ratio =
-              em?.allowedPerDay != null ? m.aiu_today / em.allowedPerDay : null;
-            const color = ratio !== null ? offsetColor(ratio) : COLORS.good;
+              allowedToday != null && allowedToday > 0
+                ? m.aiu_today / allowedToday
+                : null;
+            const color = ratio !== null ? todayColor(ratio) : COLORS.primary;
             return (
               <div
                 key={m.uuid}
@@ -173,11 +184,11 @@ export function TeamSidePanels({
                   <span style={{ fontWeight: 700, color, display: "block" }}>
                     {m.aiu_today.toFixed(1)}
                   </span>
-                  {em?.allowedPerDay != null && (
+                  {allowedToday != null && (
                     <span
                       style={{ fontSize: "0.6rem", color: COLORS.faint, display: "block" }}
                     >
-                      /{em.allowedPerDay.toFixed(1)} budget
+                      {allowedToday.toFixed(1)} left/day
                     </span>
                   )}
                 </span>

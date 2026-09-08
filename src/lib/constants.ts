@@ -67,6 +67,16 @@ export function offsetColor(ratio: number): string {
   return COLORS.bad;
 }
 
+/**
+ * Colour for today's AIU relative to the remaining daily budget allowance.
+ * Under = green, approaching (>75%) = blue, over = red.
+ */
+export function todayColor(ratio: number): string {
+  if (ratio > 1) return COLORS.bad;
+  if (ratio > 0.75) return COLORS.primary;
+  return COLORS.good;
+}
+
 /** Suffix scale used by {@link formatCompactNumber}, largest first. */
 const COMPACT_UNITS = [
   { value: 1_000_000_000, suffix: "G" },
