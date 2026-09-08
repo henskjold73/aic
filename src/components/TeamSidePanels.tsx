@@ -71,6 +71,7 @@ export function TeamSidePanels({
   const enriched = enrichMembers(members, today);
   const topUser = sortByUsage(enriched)[0];
   const closestToBudget = sortByBudgetProximity(enriched)[0];
+  const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
   const todayTop3 = (todayLeaderboard ?? []).filter((m) => m.aiu_today > 0).slice(0, 3);
 
   if (!topUser) return null;
@@ -150,24 +151,30 @@ export function TeamSidePanels({
           >
             Top today
           </div>
-          {todayTop3.map((m, i) => (
-            <div
-              key={m.uuid}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ fontWeight: i === 0 ? 700 : 400, color: COLORS.ink }}>
-                {i + 1}. {m.name}
-              </span>
-              <span style={{ fontWeight: 700, color: COLORS.good }}>
-                {m.aiu_today.toFixed(1)}
-              </span>
-            </div>
-          ))}
+          {todayTop3.map((m, i) => {
+            const em = enrichedByUuid.get(m.uuid);
+            const ratio =
+              em?.allowedPerDay != null ? m.aiu_today / em.allowedPerDay : null;
+            const color = ratio !== null ? offsetColor(ratio) : COLORS.good;
+            return (
+              <div
+                key={m.uuid}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  marginBottom: 4,
+                }}
+              >
+                <span style={{ fontWeight: i === 0 ? 700 : 400, color: COLORS.ink }}>
+                  {i + 1}. {m.name}
+                </span>
+                <span style={{ fontWeight: 700, color }}>
+                  {m.aiu_today.toFixed(1)}
+                </span>
+              </div>
+            );
+          })}
           <div style={{ color: COLORS.faint, fontSize: "0.65rem", marginTop: 2 }}>
             AIU today
           </div>

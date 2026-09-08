@@ -77,6 +77,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
   const enriched = enrichMembers(toFlatMembers(team.members, currentMonth));
   const byUsage = sortByUsage(enriched);
   const byDailyBudget = sortByBudgetProximity(enriched);
+  const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
 
   const totalAiu = enriched.reduce((sum, member) => sum + member.aiu, 0);
   const maxAiu = Math.max(...enriched.map((member) => member.aiu), 1);
@@ -185,43 +186,49 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {todayLeaderboard
                 .filter((m) => m.aiu_today > 0)
-                .map((m, index) => (
-                  <div
-                    key={m.uuid}
-                    style={{
-                      background: COLORS.surface,
-                      borderRadius: 10,
-                      padding: "10px 14px",
-                      border: `1px solid ${COLORS.border}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: COLORS.good,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          color: "#fff",
-                        }}
-                      >
-                        {index + 1}
+                .map((m, index) => {
+                  const em = enrichedByUuid.get(m.uuid);
+                  const ratio =
+                    em?.allowedPerDay != null ? m.aiu_today / em.allowedPerDay : null;
+                  const color = ratio !== null ? offsetColor(ratio) : COLORS.good;
+                  return (
+                    <div
+                      key={m.uuid}
+                      style={{
+                        background: COLORS.surface,
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        border: `1px solid ${COLORS.border}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: "50%",
+                            background: color,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "0.65rem",
+                            fontWeight: 700,
+                            color: "#fff",
+                          }}
+                        >
+                          {index + 1}
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
                       </div>
-                      <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
+                      <div style={{ fontSize: "0.88rem", fontWeight: 700, color }}>
+                        {m.aiu_today.toFixed(1)} AIU
+                      </div>
                     </div>
-                    <div style={{ fontSize: "0.88rem", fontWeight: 700, color: COLORS.good }}>
-                      {m.aiu_today.toFixed(1)} AIU
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           )}
         </div>
