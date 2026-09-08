@@ -251,6 +251,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
               key={team.id}
               teamId={team.id}
               members={team.members!}
+              todayLeaderboard={team.todayLeaderboard}
               today={today}
               floating={false}
             />
@@ -261,6 +262,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
         <TeamSidePanels
           teamId={teamsWithMembers[0].id}
           members={teamsWithMembers[0].members!}
+          todayLeaderboard={teamsWithMembers[0].todayLeaderboard}
           today={today}
         />
       )}

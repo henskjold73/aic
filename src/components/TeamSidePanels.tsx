@@ -3,7 +3,7 @@ import { useWide } from "@/hooks/useWide";
 import { COLORS, offsetColor } from "@/lib/constants";
 import { enrichMembers, sortByBudgetProximity, sortByUsage } from "@/lib/members";
 import { FONT_STACK } from "@/styles";
-import type { FlatMember, Uuid } from "@/types";
+import type { FlatMember, TeamTodayMember, Uuid } from "@/types";
 
 export interface TeamSidePanelsProps {
   /** Team these members belong to, used for the "View team" link. */
@@ -14,6 +14,8 @@ export interface TeamSidePanelsProps {
   today: Date;
   /** Renders as a floating side panel instead of an inline stacked block. */
   floating?: boolean;
+  /** Per-member AIU for today, used for the "Top today" card. */
+  todayLeaderboard?: TeamTodayMember[] | null;
 }
 
 const panelBase: CSSProperties = {
@@ -62,12 +64,14 @@ export function TeamSidePanels({
   members,
   today,
   floating = true,
+  todayLeaderboard,
 }: TeamSidePanelsProps): JSX.Element | null {
   const wide = useWide(900) && floating;
 
   const enriched = enrichMembers(members, today);
   const topUser = sortByUsage(enriched)[0];
   const closestToBudget = sortByBudgetProximity(enriched)[0];
+  const todayTop3 = (todayLeaderboard ?? []).filter((m) => m.aiu_today > 0).slice(0, 3);
 
   if (!topUser) return null;
 
@@ -127,9 +131,48 @@ export function TeamSidePanels({
   }
 
   return (
-    <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-      <div style={{ ...panelBase, flex: 1 }}>{leftContent}</div>
-      {closestToBudget && <div style={{ ...panelBase, flex: 1 }}>{rightContent}</div>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+      <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ ...panelBase, flex: 1 }}>{leftContent}</div>
+        {closestToBudget && <div style={{ ...panelBase, flex: 1 }}>{rightContent}</div>}
+      </div>
+      {todayTop3.length > 0 && (
+        <div style={{ ...panelBase, alignItems: "flex-start", textAlign: "left" }}>
+          <div
+            style={{
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              color: COLORS.good,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 6,
+            }}
+          >
+            Top today
+          </div>
+          {todayTop3.map((m, i) => (
+            <div
+              key={m.uuid}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                width: "100%",
+                marginBottom: 4,
+              }}
+            >
+              <span style={{ fontWeight: i === 0 ? 700 : 400, color: COLORS.ink }}>
+                {i + 1}. {m.name}
+              </span>
+              <span style={{ fontWeight: 700, color: COLORS.good }}>
+                {m.aiu_today.toFixed(1)}
+              </span>
+            </div>
+          ))}
+          <div style={{ color: COLORS.faint, fontSize: "0.65rem", marginTop: 2 }}>
+            AIU today
+          </div>
+        </div>
+      )}
     </div>
   );
 }

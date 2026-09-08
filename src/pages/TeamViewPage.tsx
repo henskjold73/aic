@@ -33,7 +33,7 @@ const columnHeading = (color: string) => ({
 
 /** `/team/:id` — leaderboards for a team's current-month usage. */
 export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
-  const { team, loading } = useTeamPoll(teamId);
+  const { team, loading, todayLeaderboard } = useTeamPoll(teamId);
   const [leaving, setLeaving] = useState<boolean>(false);
   const wide = useWide(600);
   const currentMonth = monthKey();
@@ -171,6 +171,57 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                   />
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={columnHeading(COLORS.good)}>Top today</div>
+          {todayLeaderboard === null ? (
+            <div style={{ fontSize: "0.8rem", color: COLORS.faint }}>Loading…</div>
+          ) : todayLeaderboard.filter((m) => m.aiu_today > 0).length === 0 ? (
+            <div style={{ fontSize: "0.8rem", color: COLORS.faint }}>No activity today</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {todayLeaderboard
+                .filter((m) => m.aiu_today > 0)
+                .map((m, index) => (
+                  <div
+                    key={m.uuid}
+                    style={{
+                      background: COLORS.surface,
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      border: `1px solid ${COLORS.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          background: COLORS.good,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                          color: "#fff",
+                        }}
+                      >
+                        {index + 1}
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{m.name}</div>
+                    </div>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 700, color: COLORS.good }}>
+                      {m.aiu_today.toFixed(1)} AIU
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>

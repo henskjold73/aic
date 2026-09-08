@@ -145,6 +145,17 @@ export interface TeamDailyPoint {
 /** Response of `GET /api/team/[id]/days`. */
 export type TeamDaysResponse = TeamDailyPoint[];
 
+/** One team member's AIU usage for today, returned by `GET /api/team/[id]/today`. */
+export interface TeamTodayMember {
+  uuid: Uuid;
+  name: string;
+  /** AIU consumed today; 0 when no data has been synced yet. */
+  aiu_today: number;
+}
+
+/** Response of `GET /api/team/[id]/today`. */
+export type TeamTodayResponse = TeamTodayMember[];
+
 /** Uniform error envelope returned by every handler on failure. */
 export interface ApiError {
   error: string;

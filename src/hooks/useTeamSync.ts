@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchMyTeams, fetchTeam } from "@/lib/api";
+import { fetchMyTeams, fetchTeam, fetchTeamToday } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import { toFlatMembers } from "@/lib/members";
 import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
-import type { FlatMember, Team, Uuid } from "@/types";
+import type { FlatMember, Team, TeamTodayMember, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -46,6 +46,8 @@ export interface TeamSyncEntry {
   name: string;
   /** Members with usage for the current month, or `null` before the first load. */
   members: FlatMember[] | null;
+  /** Per-member AIU for today, sorted highest first. `null` before the first load. */
+  todayLeaderboard: TeamTodayMember[] | null;
 }
 
 export interface TeamsSync {
@@ -99,8 +101,8 @@ export function useTeamsSync(): TeamsSync {
 
       Promise.all(
         ids.map((id) =>
-          fetchTeam(id)
-            .then((team): TeamSyncEntry => {
+          Promise.all([fetchTeam(id), fetchTeamToday(id).catch(() => null)])
+            .then(([team, today]): TeamSyncEntry => {
               const flat = toFlatMembers(team.members, monthKey());
               for (const member of flat) {
                 const elapsed = now - new Date(member.usage.updated_at).getTime();
@@ -111,7 +113,7 @@ export function useTeamsSync(): TeamsSync {
                   );
                 }
               }
-              return { id, name: team.name, members: flat };
+              return { id, name: team.name, members: flat, todayLeaderboard: today };
             })
             .catch(() => null),
         ),
@@ -140,6 +142,8 @@ export interface TeamPoll {
   loading: boolean;
   /** Force an immediate refetch. */
   refresh: () => void;
+  /** Per-member AIU for today, sorted highest first. `null` before the first load. */
+  todayLeaderboard: TeamTodayMember[] | null;
 }
 
 /**
@@ -152,6 +156,7 @@ export interface TeamPoll {
  */
 export function useTeamPoll(teamId: Uuid): TeamPoll {
   const [team, setTeam] = useState<Team | null>(null);
+  const [todayLeaderboard, setTodayLeaderboard] = useState<TeamTodayMember[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const pendingTimeouts = useRef<number[]>([]);
 
@@ -161,9 +166,10 @@ export function useTeamPoll(teamId: Uuid): TeamPoll {
   }, []);
 
   const refresh = useCallback((): void => {
-    fetchTeam(teamId)
-      .then((data) => {
+    Promise.all([fetchTeam(teamId), fetchTeamToday(teamId).catch(() => null)])
+      .then(([data, today]) => {
         setTeam(data);
+        setTodayLeaderboard(today);
         setLoading(false);
         scheduleMemberRefetches(data.members, pendingTimeouts, refresh);
       })
@@ -182,5 +188,5 @@ export function useTeamPoll(teamId: Uuid): TeamPoll {
     };
   }, [refresh, clearPending]);
 
-  return { team, loading, refresh };
+  return { team, loading, refresh, todayLeaderboard };
 }
