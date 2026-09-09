@@ -86,6 +86,11 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
 
   const totalAiu = enriched.reduce((sum, member) => sum + member.aiu, 0);
   const maxAiu = Math.max(...enriched.map((member) => member.aiu), 1);
+  const totalBudget = enriched.reduce(
+    (sum, member) => (member.budget != null ? sum + member.budget : sum),
+    0,
+  );
+  const budgetPct = totalBudget > 0 ? (totalAiu / totalBudget) * 100 : null;
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
   return (
@@ -274,6 +279,32 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               {totalAiu.toFixed(1)} AIU
             </div>
           </div>
+          {budgetPct !== null && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 4,
+              }}
+            >
+              <div style={{ fontSize: "0.78rem", color: COLORS.muted }}>% of budget used</div>
+              <div
+                style={{
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color:
+                    budgetPct >= 100
+                      ? COLORS.bad
+                      : budgetPct >= 80
+                        ? COLORS.warn
+                        : COLORS.good,
+                }}
+              >
+                {budgetPct.toFixed(1)}%
+              </div>
+            </div>
+          )}
           <TeamCumulativeChart teamId={teamId} month={currentMonth} />
         </div>
 
