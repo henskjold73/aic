@@ -6,7 +6,7 @@ import { useTeamPoll } from "@/hooks/useTeamSync";
 import { useWide } from "@/hooks/useWide";
 import { leaveTeam } from "@/lib/api";
 import { COLORS, offsetColor, todayColor } from "@/lib/constants";
-import { countWorkdays, monthKey, totalWorkdays } from "@/lib/date";
+import { countWorkdays, monthKey, parseMonthKey, totalWorkdays } from "@/lib/date";
 import {
   enrichMembers,
   sortByBudgetProximity,
@@ -31,12 +31,20 @@ const columnHeading = (color: string) => ({
   marginBottom: 8,
 });
 
+function offsetMonth(key: string, delta: number): string {
+  const { year, month } = parseMonthKey(key);
+  const d = new Date(year, month - 1 + delta, 1);
+  return monthKey(d);
+}
+
 /** `/team/:id` — leaderboards for a team's current-month usage. */
 export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
-  const { team, loading, todayLeaderboard } = useTeamPoll(teamId);
+  const [viewMonth, setViewMonth] = useState<string>(() => monthKey());
+  const { team, loading, todayLeaderboard } = useTeamPoll(teamId, viewMonth);
   const [leaving, setLeaving] = useState<boolean>(false);
   const wide = useWide(600);
   const currentMonth = monthKey();
+  const isCurrentMonth = viewMonth === currentMonth;
 
   async function leave(): Promise<void> {
     if (!window.confirm(`Leave ${team?.name ?? "this team"}?`)) return;
@@ -74,7 +82,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
     );
   }
 
-  const enriched = enrichMembers(toFlatMembers(team.members, currentMonth));
+  const enriched = enrichMembers(toFlatMembers(team.members, viewMonth));
   const byUsage = sortByUsage(enriched);
   const byDailyBudget = sortByBudgetProximity(enriched);
   const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
@@ -115,9 +123,24 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
         >
           <div>
             <div style={{ fontSize: "1.3rem", fontWeight: 700 }}>{team.name}</div>
-            <div style={{ fontSize: "0.75rem", color: COLORS.faint }}>
-              {enriched.length} member{enriched.length !== 1 ? "s" : ""} ·{" "}
-              {new Date().toLocaleString("default", { month: "long", year: "numeric" })}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: COLORS.faint }}>
+              <button
+                onClick={() => setViewMonth((m) => offsetMonth(m, -1))}
+                style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.faint, padding: "0 2px", fontSize: "0.8rem", lineHeight: 1 }}
+              >
+                ‹
+              </button>
+              <span>
+                {enriched.length} member{enriched.length !== 1 ? "s" : ""} ·{" "}
+                {new Date(parseMonthKey(viewMonth).year, parseMonthKey(viewMonth).month - 1).toLocaleString("default", { month: "long", year: "numeric" })}
+              </span>
+              <button
+                onClick={() => setViewMonth((m) => offsetMonth(m, 1))}
+                disabled={isCurrentMonth}
+                style={{ background: "none", border: "none", cursor: isCurrentMonth ? "default" : "pointer", color: isCurrentMonth ? COLORS.faint : COLORS.muted, padding: "0 2px", fontSize: "0.8rem", lineHeight: 1, opacity: isCurrentMonth ? 0.3 : 1 }}
+              >
+                ›
+              </button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -188,7 +211,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
           )}
         </div>
 
-        <div style={{ marginBottom: 16 }}>
+        {isCurrentMonth && <div style={{ marginBottom: 16 }}>
           <div style={columnHeading(COLORS.good)}>Top today</div>
           {todayLeaderboard === null ? (
             <div style={{ fontSize: "0.8rem", color: COLORS.faint }}>Loading…</div>
@@ -256,7 +279,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                 })}
             </div>
           )}
-        </div>
+        </div>}
 
         <div
           style={{
@@ -326,7 +349,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               </div>
             </div>
           )}
-          <TeamCumulativeChart teamId={teamId} month={currentMonth} budget={totalBudget || null} />
+          <TeamCumulativeChart teamId={teamId} month={viewMonth} budget={totalBudget || null} />
         </div>
 
         <div

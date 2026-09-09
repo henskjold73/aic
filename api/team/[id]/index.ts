@@ -28,7 +28,7 @@ export default async function handler(
     const team = teamRows[0];
     if (!team) return fail(res, 404, "team not found");
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const month = queryParam(req, "month") ?? new Date().toISOString().slice(0, 7);
 
     const memberRows = await query<TeamMemberUsageRow>`
       SELECT
@@ -44,7 +44,7 @@ export default async function handler(
         u.updated_at
       FROM team_members tm
       LEFT JOIN usage u
-        ON u.user_uuid = tm.user_uuid AND u.month = ${currentMonth}
+        ON u.user_uuid = tm.user_uuid AND u.month = ${month}
       WHERE tm.team_id = ${id}
       ORDER BY tm.joined_at ASC
     `;

@@ -103,9 +103,10 @@ export function joinTeam(
   );
 }
 
-/** Team metadata plus every member's current-month usage. */
-export function fetchTeam(teamId: Uuid): Promise<Team> {
-  return request<Team>(noCache(`/api/team/${teamId}`));
+/** Team metadata plus every member's usage for the given month (defaults to current). */
+export function fetchTeam(teamId: Uuid, month?: MonthKey): Promise<Team> {
+  const url = month ? `/api/team/${teamId}?month=${month}` : `/api/team/${teamId}`;
+  return request<Team>(noCache(url));
 }
 
 /** Every team a sync uuid currently belongs to. */

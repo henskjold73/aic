@@ -3,7 +3,7 @@ import { fetchMyTeams, fetchTeam, fetchTeamToday } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import { toFlatMembers } from "@/lib/members";
 import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
-import type { FlatMember, Team, TeamTodayMember, Uuid } from "@/types";
+import type { FlatMember, MonthKey, Team, TeamTodayMember, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -154,11 +154,13 @@ export interface TeamPoll {
  * Same live-update strategy as {@link useTeamsSync}: a 5-minute baseline
  * poll, plus a targeted refetch timed to each member's next expected sync.
  */
-export function useTeamPoll(teamId: Uuid): TeamPoll {
+export function useTeamPoll(teamId: Uuid, month?: MonthKey): TeamPoll {
   const [team, setTeam] = useState<Team | null>(null);
   const [todayLeaderboard, setTodayLeaderboard] = useState<TeamTodayMember[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const pendingTimeouts = useRef<number[]>([]);
+
+  const isCurrentMonth = !month || month === monthKey();
 
   const clearPending = useCallback((): void => {
     for (const id of pendingTimeouts.current) window.clearTimeout(id);
@@ -166,27 +168,31 @@ export function useTeamPoll(teamId: Uuid): TeamPoll {
   }, []);
 
   const refresh = useCallback((): void => {
-    Promise.all([fetchTeam(teamId), fetchTeamToday(teamId).catch(() => null)])
+    const todayFetch = isCurrentMonth ? fetchTeamToday(teamId).catch(() => null) : Promise.resolve(null);
+    Promise.all([fetchTeam(teamId, month), todayFetch])
       .then(([data, today]) => {
         setTeam(data);
         setTodayLeaderboard(today);
         setLoading(false);
-        scheduleMemberRefetches(data.members, pendingTimeouts, refresh);
+        if (isCurrentMonth) scheduleMemberRefetches(data.members, pendingTimeouts, refresh);
       })
       .catch(() => {
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamId]);
+  }, [teamId, month]);
 
   useEffect(() => {
+    setLoading(true);
+    setTeam(null);
     refresh();
+    if (!isCurrentMonth) return;
     const interval = window.setInterval(refresh, POLL_INTERVAL_MS);
     return () => {
       window.clearInterval(interval);
       clearPending();
     };
-  }, [refresh, clearPending]);
+  }, [refresh, clearPending, isCurrentMonth]);
 
   return { team, loading, refresh, todayLeaderboard };
 }
