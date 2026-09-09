@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type JSX } from "react";
+import { useCallback, useEffect, useMemo, useState, type JSX } from "react";
 import { AicPanel } from "@/components/AicPanel";
 import { AutoModal } from "@/components/AutoModal";
 import { BuildStamp } from "@/components/BuildStamp";
@@ -8,7 +8,7 @@ import { TopNav } from "@/components/TopNav";
 import { useTeamsSync } from "@/hooks/useTeamSync";
 import { useUsageSync } from "@/hooks/useUsageSync";
 import { useWide } from "@/hooks/useWide";
-import { leaveTeam, patchBudget } from "@/lib/api";
+import { fetchUsageHistory, leaveTeam, patchBudget } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
 import { countWorkdays, daysInMonth, MONTH_NAMES, totalWorkdays } from "@/lib/date";
 import { computeInsight } from "@/lib/members";
@@ -19,6 +19,7 @@ import {
   setMonthlyBudget as persistMonthlyBudget,
 } from "@/lib/storage";
 import { FONT_STACK, navBtn, panel } from "@/styles";
+import type { UsageHistoryRecord } from "@/types";
 
 export interface CalendarPageProps {
   /** Open the auto-sync modal on mount, used by the `/auto` route. */
@@ -36,6 +37,14 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const [viewMonth, setViewMonth] = useState<number>(() => today.getMonth());
   const [monthlyBudget, setMonthlyBudget] = useState<string>(() => getMonthlyBudget());
   const [showAutoModal, setShowAutoModal] = useState<boolean>(openSyncModal);
+
+  const [usageHistory, setUsageHistory] = useState<UsageHistoryRecord[] | null>(null);
+
+  useEffect(() => {
+    const uuid = getSyncUuid();
+    if (!uuid) return;
+    fetchUsageHistory(uuid).then(setUsageHistory).catch(() => {});
+  }, []);
 
   const teamsSync = useTeamsSync();
   const teamsRefresh = teamsSync.refresh;
@@ -67,11 +76,6 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
     }
   }, []);
 
-  const insight = useMemo(
-    () => computeInsight(monthlyBudget, usage.usedAiu, today),
-    [monthlyBudget, usage.usedAiu, today],
-  );
-
   const totalDays = daysInMonth(viewYear, viewMonth);
   const totalWd = totalWorkdays(viewYear, viewMonth);
 
@@ -87,6 +91,25 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
       ? countWorkdays(viewYear, viewMonth, today.getDate())
       : 0;
   const pctElapsed = totalWd > 0 ? (workdaysElapsed / totalWd) * 100 : 0;
+
+  const viewMonthKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
+  const historyRecord = usageHistory?.find((r) => r.month === viewMonthKey) ?? null;
+
+  // For past months, use historical record values instead of the live sync data.
+  const viewedUsedAiu = isPastMonth && historyRecord?.aiu != null
+    ? String(Math.round(historyRecord.aiu))
+    : usage.usedAiu;
+  const viewedBudget = isPastMonth && historyRecord?.budget != null
+    ? String(historyRecord.budget)
+    : monthlyBudget;
+  // For past months compute insight as of the last day of that month.
+  const insightDate = isPastMonth ? new Date(viewYear, viewMonth + 1, 0) : today;
+
+  const insight = useMemo(
+    () => computeInsight(viewedBudget, viewedUsedAiu, insightDate),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewedBudget, viewedUsedAiu, viewYear, viewMonth, isPastMonth],
+  );
 
   function prevMonth(): void {
     if (viewMonth === 0) {
@@ -106,7 +129,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
     }
   }
 
-  const parsedBudget = Number.parseFloat(monthlyBudget);
+  const parsedBudget = Number.parseFloat(viewedBudget);
   const budget = Number.isFinite(parsedBudget) ? parsedBudget : null;
 
   const summary: ReadonlyArray<readonly [string, string | number]> = [
@@ -206,13 +229,13 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
         />
 
         <AicPanel
-          monthlyBudget={monthlyBudget}
-          onMonthlyBudgetChange={updateMonthlyBudget}
-          usedAiu={usage.usedAiu}
-          onUsedAiuChange={usage.setUsedAiu}
-          usage={usage.usage}
-          syncStatus={usage.status}
-          hasSyncUuid={hasSyncUuid}
+          monthlyBudget={viewedBudget}
+          onMonthlyBudgetChange={isPastMonth ? () => {} : updateMonthlyBudget}
+          usedAiu={viewedUsedAiu}
+          onUsedAiuChange={isPastMonth ? () => {} : usage.setUsedAiu}
+          usage={isPastMonth ? null : usage.usage}
+          syncStatus={isPastMonth ? null : usage.status}
+          hasSyncUuid={hasSyncUuid && !isPastMonth}
           onOpenSyncModal={() => setShowAutoModal(true)}
           insight={insight}
         />
