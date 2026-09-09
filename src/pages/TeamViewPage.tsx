@@ -326,7 +326,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               </div>
             </div>
           )}
-          <TeamCumulativeChart teamId={teamId} month={currentMonth} />
+          <TeamCumulativeChart teamId={teamId} month={currentMonth} budget={totalBudget || null} />
         </div>
 
         <div

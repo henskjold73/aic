@@ -9,6 +9,8 @@ export interface TeamCumulativeChartProps {
   teamId: Uuid;
   /** Month to chart, as `YYYY-MM`. */
   month: MonthKey;
+  /** Combined monthly budget for all team members with a budget set. */
+  budget?: number | null;
 }
 
 /** Chart geometry in SVG user units. */
@@ -27,6 +29,7 @@ const placeholderStyle = {
 export function TeamCumulativeChart({
   teamId,
   month,
+  budget,
 }: TeamCumulativeChartProps): JSX.Element {
   const [days, setDays] = useState<TeamDaysResponse | null>(null);
 
@@ -72,7 +75,7 @@ export function TeamCumulativeChart({
     cumulative.push(running);
   }
 
-  const maxValue = Math.max(...cumulative, 1);
+  const maxValue = Math.max(...cumulative, budget ?? 0, 1);
   const usableHeight = CHART_HEIGHT - PADDING_TOP;
   const xStep = lastDay > 1 ? CHART_WIDTH / (lastDay - 1) : 0;
 
@@ -106,6 +109,25 @@ export function TeamCumulativeChart({
           </linearGradient>
         </defs>
         {areaPath && <path d={areaPath} fill="url(#team-cumulative-fill)" />}
+        {budget != null && budget > 0 && lastDay > 1 && (() => {
+          const toY = (v: number) =>
+            PADDING_TOP + usableHeight - (v / maxValue) * usableHeight;
+          const budgetPath = Array.from({ length: lastDay }, (_, i) => {
+            const day = i + 1;
+            const x = i * xStep;
+            const y = toY((budget * day) / totalDays);
+            return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+          }).join(" ");
+          return (
+            <path
+              d={budgetPath}
+              fill="none"
+              stroke={COLORS.muted}
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
+          );
+        })()}
         <path d={linePath} fill="none" stroke={COLORS.primary} strokeWidth={1.75} />
         {lastPoint && (
           <circle cx={lastPoint.x} cy={lastPoint.y} r={2.5} fill={COLORS.primary} />
