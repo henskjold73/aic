@@ -91,6 +91,8 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
     0,
   );
   const budgetPct = totalBudget > 0 ? (totalAiu / totalBudget) * 100 : null;
+  const expectedPct = totalWd > 0 ? (elapsedWd / totalWd) * 100 : null;
+  const burnStatus = budgetPct !== null && expectedPct !== null ? budgetPct - expectedPct : null;
   const joinUrl = `${window.location.origin}/team/${teamId}/join`;
 
   return (
@@ -289,19 +291,38 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               }}
             >
               <div style={{ fontSize: "0.78rem", color: COLORS.muted }}>% of budget used</div>
-              <div
-                style={{
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  color:
-                    budgetPct >= 100
-                      ? COLORS.bad
-                      : budgetPct >= 80
-                        ? COLORS.warn
-                        : COLORS.good,
-                }}
-              >
-                {budgetPct.toFixed(1)}%
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color:
+                      burnStatus === null
+                        ? COLORS.muted
+                        : burnStatus > 10
+                          ? COLORS.bad
+                          : burnStatus > 0
+                            ? COLORS.warn
+                            : COLORS.good,
+                  }}
+                >
+                  {budgetPct.toFixed(1)}%
+                </div>
+                {burnStatus !== null && (
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      color:
+                        burnStatus > 10
+                          ? COLORS.bad
+                          : burnStatus > 0
+                            ? COLORS.warn
+                            : COLORS.good,
+                    }}
+                  >
+                    {burnStatus > 0 ? "over pace" : "under pace"}
+                  </div>
+                )}
               </div>
             </div>
           )}
