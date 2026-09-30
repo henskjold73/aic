@@ -84,7 +84,7 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
           }}
         >
           Run the install script to get your sync UUID, then paste it below. Your Copilot
-          usage will update automatically every 15 minutes.
+          usage will update automatically every 20 minutes.
         </div>
 
         <div style={labelStyle}>Install</div>

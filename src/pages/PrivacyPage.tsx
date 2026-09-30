@@ -72,7 +72,7 @@ export function PrivacyPage(): JSX.Element {
 
         <div style={heading(COLORS.primary, 20)}>What is sent</div>
         <p style={paragraph}>
-          A small JSON payload is POSTed to your Vercel deployment every 15 minutes:
+          A small JSON payload is POSTed to your Vercel deployment every 20 minutes:
         </p>
         <div style={mono}>{SAMPLE_PAYLOAD}</div>
         <p style={{ ...paragraph, marginTop: 6 }}>

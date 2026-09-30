@@ -6,13 +6,13 @@ import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
 import type { FlatMember, MonthKey, Team, TeamTodayMember, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 20 * 60 * 1000;
 
 /**
- * A member's sync agent runs every 15 minutes; refetch 20 seconds after each
+ * A member's sync agent runs every 20 minutes; refetch 20 seconds after each
  * member's next expected write so the UI updates as soon as new data lands.
  */
-const EXPECTED_SYNC_INTERVAL_MS = (15 * 60 + 20) * 1000;
+const EXPECTED_SYNC_INTERVAL_MS = (20 * 60 + 20) * 1000;
 
 /**
  * Schedule a targeted refetch for each member whose next expected sync

@@ -10,7 +10,7 @@ import {
 import type { SyncStatus, UsageRecord } from "@/types";
 
 /** Background refresh interval for the signed-in user's own usage. */
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 20 * 60 * 1000;
 
 export interface UsageSync {
   /** Latest usage record for the current month, or `null` if never synced. */

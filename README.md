@@ -10,7 +10,7 @@ Track your GitHub Copilot AI Credit (AIU) usage against your monthly budget — 
 
 - **Calendar view** — each day shows your target % and projected actual % based on current burn rate
 - **Run-out day** — the day you'll exceed your budget is marked with a red border
-- **Auto-sync** — a background script reads your local Copilot SQLite DB every 15 minutes and pushes usage to Vercel Blob
+- **Auto-sync** — a background script reads your local Copilot SQLite DB every 20 minutes and pushes usage to Vercel Blob
 - **Team view** — see your team's usage ranked by most active and closest to daily budget
 
 ---
@@ -26,7 +26,7 @@ Track your GitHub Copilot AI Credit (AIU) usage against your monthly budget — 
 
 ## Set up auto-sync
 
-The sync script reads `~/.copilot/session-store.db` (written by Copilot CLI) and POSTs your monthly AIU total to your Vercel deployment every 15 minutes.
+The sync script reads `~/.copilot/session-store.db` (written by Copilot CLI) and POSTs your monthly AIU total to your Vercel deployment every 20 minutes.
 
 **macOS / Linux**
 ```bash

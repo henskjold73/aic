@@ -10,7 +10,7 @@
         <string>/Users/henskjold/src/aic/scripts/update-usage.sh</string>
     </array>
     <key>StartInterval</key>
-    <integer>3600</integer>
+    <integer>1200</integer>
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
