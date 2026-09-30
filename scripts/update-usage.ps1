@@ -33,14 +33,17 @@ $result = (& sqlite3 "$DB" -separator "|" ".read `"$tmpFile`"")
 Remove-Item $tmpFile
 
 if (-not $result) {
-    Write-Host "[aic] No usage data for current month"; exit 0
+    $month = $currentMonth
+    $aiu = 0
+    $inputTokens = 0
+    $outputTokens = 0
+} else {
+    $parts = $result -split "\|"
+    $month = $parts[0]
+    $aiu = $parts[1]
+    $inputTokens = $parts[2]
+    $outputTokens = $parts[3]
 }
-
-$parts = $result -split "\|"
-$month = $parts[0]
-$aiu = $parts[1]
-$inputTokens = $parts[2]
-$outputTokens = $parts[3]
 
 $payload = "{`"month`":`"$month`",`"aiu`":$aiu,`"input_tokens`":$inputTokens,`"output_tokens`":$outputTokens,`"script_version`":`"$ScriptVersion`",`"updated_at`":`"$updatedAt`"}"
 

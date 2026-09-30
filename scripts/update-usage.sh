@@ -32,10 +32,13 @@ GROUP BY strftime('%Y-%m', created_at);
 " -separator "|")
 
 if [ -z "$RESULT" ]; then
-  echo "[aic] No usage data for current month" && exit 0
+  month=$(date -u +%Y-%m)
+  aiu=0
+  input_tokens=0
+  output_tokens=0
+else
+  IFS='|' read -r month aiu input_tokens output_tokens <<< "$RESULT"
 fi
-
-IFS='|' read -r month aiu input_tokens output_tokens <<< "$RESULT"
 
 PAYLOAD=$(cat <<EOF
 {
