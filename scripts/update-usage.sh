@@ -1,5 +1,5 @@
 #!/bin/bash
-SCRIPT_VERSION="1.3.0"
+SCRIPT_VERSION="1.4.0"
 DB="$HOME/.copilot/session-store.db"
 UUID_FILE="$HOME/.config/aic/uuid"
 PROJECT_FILE="$HOME/.config/aic/project"
