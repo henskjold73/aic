@@ -5,7 +5,7 @@ import { buildStamp } from "@/styles";
 export function BuildStamp(): JSX.Element {
   return (
     <div style={buildStamp}>
-      {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()}
+      {__BUILD_HASH__} · {new Date(__BUILD_TIME__).toLocaleString()} · sync v{__CURRENT_SCRIPT_VERSION__}
     </div>
   );
 }
