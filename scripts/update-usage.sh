@@ -19,6 +19,12 @@ if [ -f "$PROJECT_FILE" ]; then
   PROJECT=$(cat "$PROJECT_FILE" | tr -d '[:space:]')
 fi
 
+# ── Version ping ──────────────────────────────────────────────────
+# Runs before any DB work so the version is recorded even if the script fails.
+curl -s -o /dev/null -X POST "$API/$UUID/ping" \
+  -H "Content-Type: application/json" \
+  -d "{\"script_version\":\"$SCRIPT_VERSION\"}"
+
 # ── Monthly total ─────────────────────────────────────────────────
 RESULT=$(sqlite3 "$DB" "
 SELECT

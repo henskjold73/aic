@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiRequestError, fetchUsage, patchBudget } from "@/lib/api";
+import { ApiRequestError, fetchSyncPing, fetchUsage, patchBudget } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import {
   getMonthlyBudgetNumber,
@@ -23,6 +23,8 @@ export interface UsageSync {
   setUsedAiu: (value: string) => void;
   /** Force an immediate refetch. */
   refresh: () => void;
+  /** Last-seen script version from the ping endpoint, or `null` if never pinged. */
+  syncVersion: string | null;
 }
 
 /**
@@ -34,6 +36,7 @@ export interface UsageSync {
 export function useUsageSync(onSynced?: () => void): UsageSync {
   const [usage, setUsage] = useState<UsageRecord | null>(null);
   const [status, setStatus] = useState<SyncStatus>(null);
+  const [syncVersion, setSyncVersion] = useState<string | null>(null);
   const [usedAiu, setUsedAiuState] = useState<string>(() => {
     const stored = getUsedAiu();
     return stored ? String(Math.round(Number.parseFloat(stored))) : "";
@@ -82,6 +85,15 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
     return () => window.clearInterval(interval);
   }, [refresh]);
 
+  // Fetch the last-seen script version from the ping endpoint once on mount.
+  useEffect(() => {
+    const uuid = getSyncUuid();
+    if (!uuid) return;
+    fetchSyncPing(uuid)
+      .then((ping) => setSyncVersion(ping.script_version))
+      .catch(() => { /* no ping recorded yet — leave null */ });
+  }, []);
+
   // One-time back-fill: if a budget exists locally but not server-side, push it
   // up so team views can compute this user's daily allowance.
   useEffect(() => {
@@ -99,5 +111,5 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
       });
   }, []);
 
-  return { usage, status, usedAiu, setUsedAiu, refresh };
+  return { usage, status, usedAiu, setUsedAiu, refresh, syncVersion };
 }

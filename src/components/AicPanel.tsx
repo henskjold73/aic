@@ -21,6 +21,8 @@ export interface AicPanelProps {
   onOpenSyncModal: () => void;
   /** Burn-rate summary, or `null` until both budget and usage are known. */
   insight: AicInsight | null;
+  /** Last-seen script version from the ping endpoint, or `null` if never pinged. */
+  syncVersion: string | null;
 }
 
 /** Label and colour describing how the current burn rate compares to budget. */
@@ -48,6 +50,7 @@ export function AicPanel({
   hasSyncUuid,
   onOpenSyncModal,
   insight,
+  syncVersion,
 }: AicPanelProps): JSX.Element {
   const syncLabel = hasSyncUuid
     ? syncStatus === "ok"
@@ -61,10 +64,10 @@ export function AicPanel({
     : "Set up auto-sync";
   const syncColor = hasSyncUuid && syncStatus === "ok" ? COLORS.good : COLORS.faint;
 
+  const effectiveVersion = syncVersion ?? usage?.script_version ?? null;
   const scriptOutdated =
-    usage !== null &&
-    usage.script_version !== null &&
-    usage.script_version !== __CURRENT_SCRIPT_VERSION__;
+    effectiveVersion !== null &&
+    effectiveVersion !== __CURRENT_SCRIPT_VERSION__;
 
   return (
     <div style={{ ...panel, marginTop: 14 }}>
@@ -130,7 +133,7 @@ export function AicPanel({
         </label>
       </div>
 
-      {scriptOutdated && usage && (
+      {scriptOutdated && (
         <div
           style={{
             background: "#fff8e6",
@@ -142,7 +145,7 @@ export function AicPanel({
             color: "#7a5c00",
           }}
         >
-          Your sync script is out of date (v{usage.script_version} →{" "}
+          Your sync script is out of date (v{effectiveVersion} →{" "}
           v{__CURRENT_SCRIPT_VERSION__}). Re-run the install script to update.
         </div>
       )}

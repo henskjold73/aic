@@ -67,6 +67,12 @@ export interface UsageRow extends DbRow {
   updated_at: PgTimestamp;
 }
 
+export interface SyncMetaRow extends DbRow {
+  user_uuid: string;
+  script_version: string;
+  last_ping_at: PgTimestamp;
+}
+
 export interface UsageDailyRow extends DbRow {
   user_uuid: string;
   date: PgTimestamp;
@@ -154,6 +160,14 @@ export async function ensureSchema(): Promise<void> {
       script_version TEXT,
       updated_at TIMESTAMPTZ DEFAULT NOW(),
       PRIMARY KEY (user_uuid, month)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS sync_meta (
+      user_uuid UUID PRIMARY KEY,
+      script_version TEXT NOT NULL,
+      last_ping_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
 

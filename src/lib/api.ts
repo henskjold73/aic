@@ -2,6 +2,7 @@ import type {
   ApiOk,
   DailyUsageRecord,
   MonthKey,
+  SyncPingResponse,
   Team,
   TeamCreateResponse,
   TeamDaysResponse,
@@ -74,6 +75,11 @@ export function patchBudget(uuid: Uuid, budget: number): Promise<ApiOk> {
 /** Every monthly row recorded for a sync UUID, newest first. */
 export function fetchUsageHistory(uuid: Uuid): Promise<UsageHistoryRecord[]> {
   return request<UsageHistoryRecord[]>(`/api/usage/${uuid}/history`);
+}
+
+/** Last-seen script version for a sync UUID. Rejects with 404 when never pinged. */
+export function fetchSyncPing(uuid: Uuid): Promise<SyncPingResponse> {
+  return request<SyncPingResponse>(noCache(`/api/usage/${uuid}/ping`));
 }
 
 /** Daily rows for one month. */

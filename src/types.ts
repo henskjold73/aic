@@ -69,6 +69,17 @@ export interface UsagePostBody {
   script_version?: string;
 }
 
+/** Body accepted by `POST /api/usage/[uuid]/ping`. */
+export interface SyncPingPostBody {
+  script_version: string;
+}
+
+/** Response of `GET /api/usage/[uuid]/ping`. */
+export interface SyncPingResponse {
+  script_version: string;
+  last_ping_at: IsoTimestamp;
+}
+
 /** Body accepted by `PATCH /api/usage/[uuid]`. */
 export interface UsagePatchBody {
   budget?: number | null;

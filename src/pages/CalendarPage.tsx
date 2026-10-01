@@ -238,6 +238,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
           hasSyncUuid={hasSyncUuid && !isPastMonth}
           onOpenSyncModal={() => setShowAutoModal(true)}
           insight={insight}
+          syncVersion={usage.syncVersion}
         />
 
         {/* Summary */}
