@@ -1,21 +1,30 @@
-$ScriptVersion = "1.3.0"
+$ScriptVersion = "1.4.1"
 $DB = "$env:USERPROFILE\.copilot\session-store.db"
 $UUID_FILE = "$env:APPDATA\aic\uuid"
 $PROJECT_FILE = "$env:APPDATA\aic\project"
 $API = "https://aic-jade.vercel.app/api/usage"
 
-if (-not (Test-Path $DB)) {
-    Write-Error "[aic] DB not found: $DB"; exit 1
-}
 if (-not (Test-Path $UUID_FILE)) {
     Write-Error "[aic] UUID not found - run install-sync.ps1 first"; exit 1
+}
+$uuid = (Get-Content $UUID_FILE -Raw).Trim()
+
+# Report the version before any DB work, even if a prerequisite is missing.
+try {
+    $pingPayload = @{ script_version = $ScriptVersion } | ConvertTo-Json -Compress
+    Invoke-RestMethod -Uri "$API/$uuid/ping" -Method POST -Body $pingPayload -ContentType "application/json" | Out-Null
+} catch {
+    Write-Warning "[aic] Version ping failed: $_"
+}
+
+if (-not (Test-Path $DB)) {
+    Write-Error "[aic] DB not found: $DB"; exit 1
 }
 if (-not (Get-Command sqlite3 -ErrorAction SilentlyContinue)) {
     Write-Error "[aic] sqlite3 not found. Install via: winget install SQLite.SQLite"
     exit 1
 }
 
-$uuid = (Get-Content $UUID_FILE -Raw).Trim()
 $project = if (Test-Path $PROJECT_FILE) { (Get-Content $PROJECT_FILE -Raw).Trim() } else { $null }
 $currentMonth = (Get-Date).ToString("yyyy-MM")
 $updatedAt = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")

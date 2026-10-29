@@ -40,6 +40,9 @@ irm https://raw.githubusercontent.com/henskjold73/aic/main/scripts/install-sync.
 
 The script prints a UUID — paste it at `/auto` on your deployment to link your local usage to the app.
 
+On Windows, scheduled syncs run without opening a console window. Rerun the install
+command to update an existing installation; your UUID is preserved.
+
 To uninstall:
 
 ```bash
