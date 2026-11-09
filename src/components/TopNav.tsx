@@ -12,16 +12,34 @@ export interface TopNavProps {
   onLeaveTeam: (teamId: string) => void;
 }
 
+/** Two stacked rows: teams on top, pages and the account control below. */
 const bar: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+  fontFamily: FONT_STACK,
+  fontSize: "0.7rem",
+  marginBottom: 12,
+};
+
+const row: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   gap: 8,
-  fontFamily: FONT_STACK,
-  fontSize: "0.7rem",
-  marginBottom: 10,
-  flexWrap: "wrap",
+  minHeight: 28,
 };
+
+const accountName: CSSProperties = {
+  color: COLORS.ink,
+  fontWeight: 600,
+  maxWidth: 140,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const plainBtn: CSSProperties = { background: "transparent", border: "none", fontSize: "inherit" };
 
 const group: CSSProperties = {
   display: "flex",
@@ -146,65 +164,75 @@ export function TopNav({ teams, onLeaveTeam }: TopNavProps): JSX.Element {
   return (
     <nav style={bar} aria-label="Teams and pages">
       <style>{hoverStyles}</style>
-      <div style={group}>
-        <a href="/team" style={navLink} className="aic-nav-link">
-          <PlusIcon />
-          Join team
-        </a>
-        {teams.map((team) => (
-          <span key={team.id} style={pill} className="aic-pill">
-            <a href={`/team/${team.id}`} style={pillLink} title={team.name}>
-              {team.name}
+      <div style={row}>
+        <div style={group}>
+          <a href="/team" style={navLink} className="aic-nav-link">
+            <PlusIcon />
+            Join team
+          </a>
+          {teams.map((team) => (
+            <span key={team.id} style={pill} className="aic-pill">
+              <a href={`/team/${team.id}`} style={pillLink} title={team.name}>
+                {team.name}
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Leave ${team.name}?`)) onLeaveTeam(team.id);
+                }}
+                style={leaveBtn}
+                className="aic-leave-btn"
+                aria-label={`Leave ${team.name}`}
+                title={`Leave ${team.name}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+      <div style={row}>
+        <div style={group}>
+          {account && (
+            <a href="/devices" style={navLink} className="aic-nav-link">
+              Devices
             </a>
+          )}
+          <a href="/report" style={navLink} className="aic-nav-link">
+            <ReportIcon />
+            Report
+          </a>
+          <a href="/privacy" style={navLink} className="aic-nav-link">
+            <PrivacyIcon />
+            Privacy
+          </a>
+        </div>
+        <div style={group}>
+          {account ? (
+            <>
+              <span style={accountName} title={account.display_name ?? undefined}>
+                {account.display_name ?? "Account"}
+              </span>
+              <button
+                type="button"
+                onClick={logOut}
+                style={{ ...navLink, ...plainBtn }}
+                className="aic-nav-link"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(`Leave ${team.name}?`)) onLeaveTeam(team.id);
-              }}
-              style={leaveBtn}
-              className="aic-leave-btn"
-              aria-label={`Leave ${team.name}`}
-              title={`Leave ${team.name}`}
+              onClick={() => signIn("/")}
+              style={{ ...navLink, ...plainBtn }}
+              className="aic-nav-link"
             >
-              ×
+              Sign in
             </button>
-          </span>
-        ))}
-      </div>
-      <div style={group}>
-        {account ? (
-          <button
-            type="button"
-            onClick={logOut}
-            style={{ ...navLink, background: "transparent", border: "none", fontSize: "inherit" }}
-            className="aic-nav-link"
-            title="Sign out"
-          >
-            {account.display_name ?? "Account"} · Sign out
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => signIn("/")}
-            style={{ ...navLink, background: "transparent", border: "none", fontSize: "inherit" }}
-            className="aic-nav-link"
-          >
-            Sign in
-          </button>
-        )}
-        {account && (
-          <a href="/devices" style={navLink} className="aic-nav-link">
-            Devices
-          </a>
-        )}
-        <a href="/report" style={navLink} className="aic-nav-link">
-          <ReportIcon />
-          Report
-        </a>
-        <a href="/privacy" style={navLink} className="aic-nav-link">
-          <PrivacyIcon />
-          Privacy
-        </a>
+          )}
+        </div>
       </div>
     </nav>
   );
