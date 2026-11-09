@@ -51,6 +51,16 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const onSynced = useCallback(() => teamsRefresh(), [teamsRefresh]);
   const usage = useUsageSync(onSynced);
 
+  // A new browser has no local budget, but the account already has one on the
+  // server — adopt it so the budget follows the user across devices.
+  const serverBudget = usage.usage?.budget ?? null;
+  useEffect(() => {
+    if (serverBudget === null || getMonthlyBudget() !== "") return;
+    const value = String(serverBudget);
+    setMonthlyBudget(value);
+    persistMonthlyBudget(value);
+  }, [serverBudget]);
+
   const hasSyncUuid = hasSyncKey();
 
   const handleLeaveTeam = useCallback(

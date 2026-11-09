@@ -1,0 +1,13 @@
+{
+  "name": "aic-local-harness",
+  "private": true,
+  "description": "Local-only: runs api/ against in-memory Postgres (PGlite). Never deployed.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.2.17",
+    "esbuild": "0.21.5"
+  }
+}

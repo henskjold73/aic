@@ -90,7 +90,10 @@ Requires a `.env.local` with your Postgres connection string:
 DATABASE_URL=postgres://...
 ```
 
-`vite dev` does not serve `api/`; use `vercel dev` to run the serverless functions locally.
+`vite dev` does not serve `api/`. Two ways to run the API locally:
+
+- `vercel dev` — real functions against whatever `DATABASE_URL` points at (use a Neon branch, not production, since the first request migrates the schema).
+- **Local harness** (no database, no GitHub needed): `cd dev && npm install && npm start`, then open `http://127.0.0.1:3000`. It runs the real `api/` code against an in-memory Postgres (PGlite) seeded in the *old* schema, so the migration is exercised. Sign in with `/dev/login?as=alice` instead of GitHub; seeded legacy keys and a team URL are printed on startup. `bash dev/smoke.sh` runs ~33 API checks against it. The harness lives in `dev/` and is never deployed.
 
 ---
 
