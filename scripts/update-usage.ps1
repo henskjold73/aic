@@ -1,4 +1,4 @@
-$ScriptVersion = "1.4.1"
+$ScriptVersion = "1.5.0"
 $DB = "$env:USERPROFILE\.copilot\session-store.db"
 $UUID_FILE = "$env:APPDATA\aic\uuid"
 $PROJECT_FILE = "$env:APPDATA\aic\project"
@@ -10,8 +10,24 @@ if (-not (Test-Path $UUID_FILE)) {
 $uuid = (Get-Content $UUID_FILE -Raw).Trim()
 
 # Report the version before any DB work, even if a prerequisite is missing.
+# The fingerprint identifies this Copilot DB so the server can warn when two
+# sync keys read the same data. It is a hash; no usage content is sent.
+$fingerprint = $null
 try {
-    $pingPayload = @{ script_version = $ScriptVersion } | ConvertTo-Json -Compress
+    if ((Test-Path $DB) -and (Get-Command sqlite3 -ErrorAction SilentlyContinue)) {
+        $firstEvent = (& sqlite3 "$DB" "SELECT session_id || '|' || created_at FROM assistant_usage_events ORDER BY id ASC LIMIT 1;" 2>$null)
+        if ($firstEvent) {
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes(([string]$firstEvent).Trim()))
+            $fingerprint = -join ($bytes | ForEach-Object { $_.ToString("x2") })
+        }
+    }
+} catch { }
+
+try {
+    $pingBody = @{ script_version = $ScriptVersion }
+    if ($fingerprint) { $pingBody.db_fingerprint = $fingerprint }
+    $pingPayload = $pingBody | ConvertTo-Json -Compress
     Invoke-RestMethod -Uri "$API/$uuid/ping" -Method POST -Body $pingPayload -ContentType "application/json" | Out-Null
 } catch {
     Write-Warning "[aic] Version ping failed: $_"

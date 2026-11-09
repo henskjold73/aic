@@ -4,7 +4,7 @@ import { applyCors, errorMessage, fail, isUuid, queryParam } from "../../http";
 import type { TeamTodayResponse } from "../../../src/types";
 
 interface TeamTodayRow extends DbRow {
-  uuid: string;
+  id: string;
   name: string;
   aiu_today: PgNumeric;
 }
@@ -23,19 +23,19 @@ export default async function handler(
   try {
     const rows = await query<TeamTodayRow>`
       SELECT
-        tm.user_uuid AS uuid,
+        tm.account_id AS id,
         tm.display_name AS name,
-        COALESCE(ud.aiu, 0) AS aiu_today
+        COALESCE(SUM(ud.aiu), 0) AS aiu_today
       FROM team_members tm
-      LEFT JOIN usage_daily ud
-        ON ud.user_uuid = tm.user_uuid
-        AND ud.date = CURRENT_DATE
+      LEFT JOIN sync_keys k ON k.account_id = tm.account_id AND k.disabled_at IS NULL
+      LEFT JOIN usage_daily ud ON ud.user_uuid = k.key AND ud.date = CURRENT_DATE
       WHERE tm.team_id = ${id}
+      GROUP BY tm.account_id, tm.display_name
       ORDER BY aiu_today DESC
     `;
 
     const payload: TeamTodayResponse = rows.map((row) => ({
-      uuid: row.uuid,
+      id: row.id,
       name: row.name,
       aiu_today: num(row.aiu_today) ?? 0,
     }));

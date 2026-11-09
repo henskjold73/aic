@@ -1,12 +1,14 @@
 import { useEffect, useState, type JSX } from "react";
-import { fetchUsageDays } from "@/lib/api";
+import { fetchTeamMemberDays } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
 import { parseMonthKey } from "@/lib/date";
 import type { DailyUsageRecord, MonthKey, Uuid } from "@/types";
 
 export interface DailyUsageChartProps {
-  /** Sync UUID whose daily rows should be charted. */
-  uuid: Uuid;
+  /** Team the member belongs to. */
+  teamId: Uuid;
+  /** Account id of the member whose daily rows should be charted. */
+  memberId: Uuid;
   /** Monthly AIU budget, used to draw the per-day allowance line. */
   budget: number | null;
   /** Month to chart, as `YYYY-MM`. */
@@ -136,12 +138,12 @@ export function DailyUsageBars({ days, budget, month }: DailyUsageBarsProps): JS
 }
 
 /** Sparkline of daily AIU for one member and month, with a budget guideline. */
-export function DailyUsageChart({ uuid, budget, month }: DailyUsageChartProps): JSX.Element {
+export function DailyUsageChart({ teamId, memberId, budget, month }: DailyUsageChartProps): JSX.Element {
   const [days, setDays] = useState<DailyUsageRecord[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetchUsageDays(uuid, month)
+    fetchTeamMemberDays(teamId, memberId, month)
       .then((data) => {
         if (!cancelled) setDays(data);
       })
@@ -151,7 +153,7 @@ export function DailyUsageChart({ uuid, budget, month }: DailyUsageChartProps): 
     return () => {
       cancelled = true;
     };
-  }, [uuid, month]);
+  }, [teamId, memberId, month]);
 
   if (days === null) return <div style={placeholderStyle}>Loading…</div>;
 

@@ -5,6 +5,8 @@ import { COLORS, offsetColor } from "@/lib/constants";
 import type { EnrichedMember, MonthKey } from "@/types";
 
 export interface MemberRowProps {
+  /** Team the row is shown in; scopes the member's daily chart. */
+  teamId: string;
   /** Member to render. */
   member: EnrichedMember;
   /** Zero-based rank, displayed as a 1-based badge. */
@@ -118,6 +120,7 @@ function OffsetLabel({ ratio }: { ratio: number }): JSX.Element {
 
 /** One expandable team-member card with a usage or budget-deviation bar. */
 export function MemberRow({
+  teamId,
   member,
   rank,
   accent,
@@ -198,7 +201,7 @@ export function MemberRow({
       </div>
 
       {expanded && (
-        <DailyUsageChart uuid={member.uuid} budget={member.budget} month={month} />
+        <DailyUsageChart teamId={teamId} memberId={member.id} budget={member.budget} month={month} />
       )}
     </div>
   );

@@ -10,7 +10,10 @@ import {
 import { applyCors, errorMessage, fail, isUuid, queryParam } from "../../http";
 import type { Team, TeamMember } from "../../../src/types";
 
-/** `GET /api/team/[id]` — team metadata plus every member's current-month usage. */
+/**
+ * `GET /api/team/[id]` — team metadata plus every member's usage for `?month=`.
+ * Members are identified by account id; sync keys are never returned.
+ */
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
@@ -30,27 +33,32 @@ export default async function handler(
 
     const month = queryParam(req, "month") ?? new Date().toISOString().slice(0, 7);
 
+    // One row per member (account); their usage is summed over every active
+    // sync key, and the budget comes from the account (falling back to the
+    // pre-account value on the key rows).
     const memberRows = await query<TeamMemberUsageRow>`
       SELECT
-        tm.user_uuid AS uuid,
+        tm.account_id AS id,
         tm.display_name AS name,
         tm.joined_at,
-        u.month,
-        u.aiu,
-        u.input_tokens,
-        u.output_tokens,
-        u.budget,
-        u.script_version,
-        u.updated_at
+        MAX(u.month) AS month,
+        SUM(u.aiu) AS aiu,
+        SUM(u.input_tokens) AS input_tokens,
+        SUM(u.output_tokens) AS output_tokens,
+        COALESCE(MAX(ab.budget), MAX(u.budget)) AS budget,
+        (ARRAY_AGG(u.script_version ORDER BY u.updated_at DESC))[1] AS script_version,
+        MAX(u.updated_at) AS updated_at
       FROM team_members tm
-      LEFT JOIN usage u
-        ON u.user_uuid = tm.user_uuid AND u.month = ${month}
+      LEFT JOIN sync_keys k ON k.account_id = tm.account_id AND k.disabled_at IS NULL
+      LEFT JOIN usage u ON u.user_uuid = k.key AND u.month = ${month}
+      LEFT JOIN account_budgets ab ON ab.account_id = tm.account_id AND ab.month = ${month}
       WHERE tm.team_id = ${id}
+      GROUP BY tm.account_id, tm.display_name, tm.joined_at
       ORDER BY tm.joined_at ASC
     `;
 
     const members: TeamMember[] = memberRows.map((m) => ({
-      uuid: m.uuid,
+      id: m.id,
       name: m.name,
       joined_at: iso(m.joined_at) ?? "",
       usage: m.month

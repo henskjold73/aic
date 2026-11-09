@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMyTeams, fetchTeam, fetchTeamToday } from "@/lib/api";
 import { monthKey } from "@/lib/date";
 import { toFlatMembers } from "@/lib/members";
-import { addTeamId, getSyncUuid, getTeamIds } from "@/lib/storage";
+import { getSubject } from "@/lib/session";
+import { addTeamId, getTeamIds } from "@/lib/storage";
 import type { FlatMember, MonthKey, Team, TeamTodayMember, Uuid } from "@/types";
 
 /** Background refresh interval for the team roster. */
@@ -78,7 +79,7 @@ export function useTeamsSync(): TeamsSync {
   }, []);
 
   const refresh = useCallback((): void => {
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     const reconciled = uuid
       ? fetchMyTeams(uuid)
           .then((serverTeams) => {

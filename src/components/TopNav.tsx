@@ -1,6 +1,8 @@
 import type { CSSProperties, JSX } from "react";
 import type { TeamSyncEntry } from "@/hooks/useTeamSync";
+import { signOut } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
+import { getAccount, signIn } from "@/lib/session";
 import { FONT_STACK } from "@/styles";
 
 export interface TopNavProps {
@@ -129,6 +131,18 @@ function PrivacyIcon(): JSX.Element {
  * leave it, and links to the report and privacy pages.
  */
 export function TopNav({ teams, onLeaveTeam }: TopNavProps): JSX.Element {
+  const account = getAccount();
+
+  function logOut(): void {
+    signOut()
+      .catch(() => {
+        /* the cookie may already be gone — reload either way */
+      })
+      .finally(() => {
+        window.location.href = "/";
+      });
+  }
+
   return (
     <nav style={bar} aria-label="Teams and pages">
       <style>{hoverStyles}</style>
@@ -158,6 +172,31 @@ export function TopNav({ teams, onLeaveTeam }: TopNavProps): JSX.Element {
         ))}
       </div>
       <div style={group}>
+        {account ? (
+          <button
+            type="button"
+            onClick={logOut}
+            style={{ ...navLink, background: "transparent", border: "none", fontSize: "inherit" }}
+            className="aic-nav-link"
+            title="Sign out"
+          >
+            {account.display_name ?? "Account"} · Sign out
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => signIn("/")}
+            style={{ ...navLink, background: "transparent", border: "none", fontSize: "inherit" }}
+            className="aic-nav-link"
+          >
+            Sign in
+          </button>
+        )}
+        {account && (
+          <a href="/devices" style={navLink} className="aic-nav-link">
+            Devices
+          </a>
+        )}
         <a href="/report" style={navLink} className="aic-nav-link">
           <ReportIcon />
           Report

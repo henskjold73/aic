@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomUUID } from "node:crypto";
-import { query, sql, type TeamRow } from "../db";
+import { legacyKeyApiEnabled, query, sql, type TeamRow } from "../db";
+import { accountIdForKey } from "../_accounts";
+import { sessionAccountId } from "../_auth";
 import { applyCors, errorMessage, fail, isUuid, parseBody, queryParam } from "../http";
 import type { TeamCreateBody, TeamCreateResponse, TeamListResponse } from "../../src/types";
 
@@ -8,7 +10,8 @@ const MAX_TEAM_NAME_LENGTH = 64;
 
 /**
  * `POST /api/team` — create a new team and return its id and name.
- * `GET /api/team?uuid=` — list every team a sync uuid belongs to.
+ * `GET /api/team[?uuid=]` — list every team a sync uuid (or, with no `uuid`,
+ * the signed-in account) belongs to.
  */
 export default async function handler(
   req: VercelRequest,
@@ -22,15 +25,27 @@ export default async function handler(
 }
 
 async function listMyTeams(req: VercelRequest, res: VercelResponse): Promise<void> {
+  // Signed in: the account's teams. Otherwise (legacy) the teams of the account
+  // that owns `?uuid=`, while the key-only API is still enabled.
   const uuid = queryParam(req, "uuid");
-  if (!isUuid(uuid)) return fail(res, 400, "invalid uuid");
+  let accountId: string | null = null;
+  if (uuid === undefined) {
+    accountId = sessionAccountId(req);
+    if (!accountId) return fail(res, 401, "not signed in");
+  } else {
+    if (!isUuid(uuid)) return fail(res, 400, "invalid uuid");
+    if (!legacyKeyApiEnabled()) return fail(res, 403, "sign in to see your teams");
+  }
 
   try {
+    if (accountId === null && uuid !== undefined) accountId = await accountIdForKey(uuid);
+    if (accountId === null) return void res.status(200).json([]);
+
     const rows = await query<TeamRow>`
       SELECT t.id, t.name, t.created_at
       FROM teams t
       JOIN team_members tm ON tm.team_id = t.id
-      WHERE tm.user_uuid = ${uuid}
+      WHERE tm.account_id = ${accountId}
       ORDER BY tm.joined_at ASC
     `;
     const teams: TeamListResponse = rows.map((row) => ({ id: row.id, name: row.name }));

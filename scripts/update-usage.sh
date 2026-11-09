@@ -1,5 +1,5 @@
 #!/bin/bash
-SCRIPT_VERSION="1.4.1"
+SCRIPT_VERSION="1.5.0"
 DB="$HOME/.copilot/session-store.db"
 UUID_FILE="$HOME/.config/aic/uuid"
 PROJECT_FILE="$HOME/.config/aic/project"
@@ -21,9 +21,24 @@ fi
 
 # ── Version ping ──────────────────────────────────────────────────
 # Runs before any DB work so the version is recorded even if the script fails.
+# The fingerprint identifies this Copilot DB so the server can warn when two
+# sync keys read the same data. It is a hash; no usage content is sent.
+FINGERPRINT=""
+FIRST_EVENT=$(sqlite3 "$DB" "SELECT session_id || '|' || created_at FROM assistant_usage_events ORDER BY id ASC LIMIT 1;" 2>/dev/null)
+if [ -n "$FIRST_EVENT" ]; then
+  if command -v sha256sum >/dev/null 2>&1; then
+    FINGERPRINT=$(printf '%s' "$FIRST_EVENT" | sha256sum | cut -d' ' -f1)
+  else
+    FINGERPRINT=$(printf '%s' "$FIRST_EVENT" | shasum -a 256 | cut -d' ' -f1)
+  fi
+fi
+
+FP_FIELD=""
+[ -n "$FINGERPRINT" ] && FP_FIELD=",\"db_fingerprint\":\"$FINGERPRINT\""
+
 curl -s -o /dev/null -X POST "$API/$UUID/ping" \
   -H "Content-Type: application/json" \
-  -d "{\"script_version\":\"$SCRIPT_VERSION\"}"
+  -d "{\"script_version\":\"$SCRIPT_VERSION\"$FP_FIELD}"
 
 # ── Monthly total ─────────────────────────────────────────────────
 RESULT=$(sqlite3 "$DB" "

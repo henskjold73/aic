@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { int, iso, num, query, type UsageRow } from "../../db";
+import { int, iso, legacyKeyApiEnabled, num, query, type UsageRow } from "../../db";
 import { applyCors, errorMessage, fail, isUuid, queryParam } from "../../http";
 import type { UsageHistoryRecord } from "../../../src/types";
 
@@ -12,6 +12,8 @@ export default async function handler(
 ): Promise<void> {
   if (applyCors(req, res, ["GET"])) return;
   if (req.method !== "GET") return fail(res, 405, "method not allowed");
+
+  if (!legacyKeyApiEnabled()) return fail(res, 403, "key-only access is turned off — sign in");
 
   const uuid = queryParam(req, "uuid");
   if (!isUuid(uuid)) return fail(res, 400, "invalid uuid");

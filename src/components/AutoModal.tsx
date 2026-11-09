@@ -1,5 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
+import { ApiRequestError, attachKey } from "@/lib/api";
 import { COLORS, isUuid, syncCommands } from "@/lib/constants";
+import { getAccount, signIn } from "@/lib/session";
 import { clearSyncUuid, getSyncUuid, setSyncUuid } from "@/lib/storage";
 import { inputStyle, monoBlock } from "@/styles";
 
@@ -9,17 +11,25 @@ export interface AutoModalProps {
 }
 
 /** Outcome of the last save attempt. */
-type SaveStatus = "error" | "saved" | null;
+type SaveStatus = "error" | "key_taken" | "saved" | null;
 
 const labelStyle = { fontSize: "0.7rem", color: COLORS.faint, marginBottom: 4 } as const;
 
 /** Modal that captures the sync UUID and shows install/uninstall commands. */
 export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
-  const [input, setInput] = useState<string>(() => getSyncUuid() ?? "");
+  const account = getAccount();
+  const [input, setInput] = useState<string>(() => (account ? "" : (getSyncUuid() ?? "")));
   const [status, setStatus] = useState<SaveStatus>(null);
-  const [hasSaved, setHasSaved] = useState<boolean>(() => getSyncUuid() !== null);
+  const [hasSaved, setHasSaved] = useState<boolean>(() => !account && getSyncUuid() !== null);
 
   const { install, uninstall } = syncCommands();
+
+  function finish(): void {
+    setStatus("saved");
+    window.setTimeout(() => {
+      window.location.href = "/";
+    }, 800);
+  }
 
   function save(): void {
     const value = input.trim();
@@ -27,12 +37,18 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
       setStatus("error");
       return;
     }
+    if (account) {
+      // Signed in: link the key to the account instead of this browser.
+      attachKey(value)
+        .then(finish)
+        .catch((err: unknown) => {
+          setStatus(err instanceof ApiRequestError && err.status === 409 ? "key_taken" : "error");
+        });
+      return;
+    }
     setSyncUuid(value);
     setHasSaved(true);
-    setStatus("saved");
-    window.setTimeout(() => {
-      window.location.href = "/";
-    }, 800);
+    finish();
   }
 
   function clear(): void {
@@ -87,6 +103,45 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
           usage will update automatically every 20 minutes.
         </div>
 
+        {account ? (
+          <div style={{ fontSize: "0.75rem", color: COLORS.muted, marginBottom: 16 }}>
+            Signed in as <strong>{account.display_name ?? "your account"}</strong>.{" "}
+            {account.keys.length === 0
+              ? "No sync keys are connected yet."
+              : `Connected keys: ${account.keys
+                  .map((k) => `…${k.hint}${k.disabled ? " (disabled)" : ""}`)
+                  .join(", ")}.`}{" "}
+            The installer prints a code for new machines — enter it on the{" "}
+            <a href="/devices" style={{ color: COLORS.primary }}>
+              Devices page
+            </a>
+            . Or paste a UUID below to add a machine you already set up.
+          </div>
+        ) : (
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => signIn("/auto")}
+              style={{
+                width: "100%",
+                padding: "8px 0",
+                background: COLORS.ink,
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+              }}
+            >
+              Sign in with GitHub
+            </button>
+            <div style={{ fontSize: "0.7rem", color: COLORS.faint, marginTop: 6 }}>
+              Use the same account on any browser or machine. You can also continue without
+              signing in; the UUID is then stored only in this browser.
+            </div>
+          </div>
+        )}
+
         <div style={labelStyle}>Install</div>
         <div style={{ ...monoBlock, marginBottom: 10 }}>{install}</div>
         <div style={labelStyle}>Uninstall</div>
@@ -107,6 +162,11 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
         {status === "error" && (
           <div style={{ fontSize: "0.75rem", color: COLORS.bad, marginBottom: 10 }}>
             Invalid UUID — check the value from the install script.
+          </div>
+        )}
+        {status === "key_taken" && (
+          <div style={{ fontSize: "0.75rem", color: COLORS.bad, marginBottom: 10 }}>
+            That UUID is already linked to a different account.
           </div>
         )}
         {status === "saved" && (

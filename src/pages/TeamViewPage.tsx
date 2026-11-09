@@ -13,7 +13,8 @@ import {
   sortByUsage,
   toFlatMembers,
 } from "@/lib/members";
-import { getSyncUuid, removeTeamId } from "@/lib/storage";
+import { getSubject } from "@/lib/session";
+import { removeTeamId } from "@/lib/storage";
 import { backLink, btnSecondary, card, FONT_STACK, pageWrap } from "@/styles";
 import type { Uuid } from "@/types";
 
@@ -51,7 +52,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
 
     setLeaving(true);
     removeTeamId(teamId);
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     try {
       if (uuid) await leaveTeam(teamId, uuid);
     } catch {
@@ -85,7 +86,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
   const enriched = enrichMembers(toFlatMembers(team.members, viewMonth));
   const byUsage = sortByUsage(enriched);
   const byDailyBudget = sortByBudgetProximity(enriched);
-  const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
+  const enrichedById = new Map(enriched.map((m) => [m.id, m]));
 
   const today = new Date();
   const totalWd = totalWorkdays(today.getFullYear(), today.getMonth());
@@ -177,7 +178,8 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {byUsage.map((member, index) => (
                 <MemberRow
-                  key={member.uuid}
+                  teamId={teamId}
+                  key={member.id}
                   member={member}
                   rank={index}
                   accent={COLORS.primary}
@@ -195,7 +197,8 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {byDailyBudget.map((member, index) => (
                   <MemberRow
-                    key={member.uuid}
+                    teamId={teamId}
+                    key={member.id}
                     member={member}
                     rank={index}
                     accent={offsetColor(member.ratio)}
@@ -222,7 +225,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               {todayLeaderboard
                 .filter((m) => m.aiu_today > 0)
                 .map((m, index) => {
-                  const em = enrichedByUuid.get(m.uuid);
+                  const em = enrichedById.get(m.id);
                   const remainingBudget =
                     em?.budget != null ? em.budget - em.aiu : null;
                   const allowedToday =
@@ -234,7 +237,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                   const color = ratio !== null ? todayColor(ratio) : COLORS.primary;
                   return (
                     <div
-                      key={m.uuid}
+                      key={m.id}
                       style={{
                         background: COLORS.surface,
                         borderRadius: 10,

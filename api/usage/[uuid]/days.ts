@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { dateKey, int, iso, num, query, sql, type UsageDailyRow } from "../../db";
+import { dateKey, ensureSchema, ensureSyncKey, int, iso, legacyKeyApiEnabled, num, query, sql, type UsageDailyRow } from "../../db";
 import { applyCors, errorMessage, fail, isUuid, parseBody, queryParam } from "../../http";
 import type { DailyUsageRecord, DaysPostBody } from "../../../src/types";
 
@@ -27,6 +27,8 @@ export default async function handler(
     const project = body?.project ?? null;
 
     try {
+      await ensureSchema();
+      await ensureSyncKey(uuid);
       for (const day of days) {
         await sql`
           INSERT INTO usage_daily (user_uuid, date, aiu, input_tokens, output_tokens, project, synced_at)
@@ -47,6 +49,7 @@ export default async function handler(
   }
 
   if (req.method === "GET") {
+    if (!legacyKeyApiEnabled()) return fail(res, 403, "key-only access is turned off — sign in");
     const month = queryParam(req, "month") ?? new Date().toISOString().slice(0, 7);
 
     try {

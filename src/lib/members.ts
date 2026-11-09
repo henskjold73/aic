@@ -21,7 +21,7 @@ export function toFlatMembers(
     const usage = member.usage;
     if (!usage || usage.month !== month) continue;
     flat.push({
-      uuid: member.uuid,
+      id: member.id,
       name: member.name,
       joined_at: member.joined_at,
       usage,

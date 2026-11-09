@@ -5,6 +5,7 @@ export type Route =
   | { kind: "calendar"; openSyncModal: boolean }
   | { kind: "privacy" }
   | { kind: "report" }
+  | { kind: "devices" }
   | { kind: "team-create" }
   | { kind: "team-join"; teamId: Uuid }
   | { kind: "team-view"; teamId: Uuid };
@@ -21,6 +22,7 @@ const TEAM_VIEW_RE = /^\/team\/([^/]+)$/;
 export function resolveRoute(pathname: string = window.location.pathname): Route {
   if (pathname === "/privacy") return { kind: "privacy" };
   if (pathname === "/report") return { kind: "report" };
+  if (pathname === "/devices") return { kind: "devices" };
   if (pathname === "/team") return { kind: "team-create" };
 
   const joinMatch = TEAM_JOIN_RE.exec(pathname);

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>AIC Calendar</title>
+  <defs>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e05252" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#e05252" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="burn" gradientUnits="userSpaceOnUse" x1="96" y1="400" x2="372" y2="92">
+      <stop offset="0" stop-color="#7b8ff7"/>
+      <stop offset="0.55" stop-color="#4f6ef7"/>
+      <stop offset="0.8" stop-color="#e0953a"/>
+      <stop offset="1" stop-color="#e05252"/>
+    </linearGradient>
+    <linearGradient id="area" gradientUnits="userSpaceOnUse" x1="0" y1="170" x2="0" y2="420">
+      <stop offset="0" stop-color="#4f6ef7" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#4f6ef7" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="#1a1a2e"/>
+
+  <!-- area under the burn curve, up to the budget ceiling -->
+  <path d="M96 404 C 196 398 276 330 330 170 L 330 420 L 96 420 Z" fill="url(#area)"/>
+
+  <!-- the straight "on pace" line you are supposed to follow -->
+  <path d="M96 404 L 416 170" fill="none" stroke="#7b8ff7" stroke-opacity="0.35" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 22"/>
+
+  <!-- budget ceiling -->
+  <path d="M84 170 H 428" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 22"/>
+
+  <!-- the real burn: accelerating, then over the ceiling -->
+  <path d="M96 404 C 196 398 276 330 330 170 C 344 128 358 108 376 90" fill="none" stroke="url(#burn)" stroke-width="30" stroke-linecap="round"/>
+
+  <!-- run-out day -->
+  <circle cx="330" cy="170" r="62" fill="url(#glow)"/>
+  <circle cx="330" cy="170" r="25" fill="#1a1a2e" stroke="#e05252" stroke-width="12"/>
+  <circle cx="330" cy="170" r="8" fill="#fff"/>
+</svg>

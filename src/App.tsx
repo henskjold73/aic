@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import { inject } from "@vercel/analytics";
 import { CalendarPage } from "@/pages/CalendarPage";
+import { DevicesPage } from "@/pages/DevicesPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { ReportPage } from "@/pages/ReportPage";
 import { TeamCreatePage } from "@/pages/TeamCreatePage";
@@ -19,6 +20,8 @@ export default function App(): JSX.Element {
       return <PrivacyPage />;
     case "report":
       return <ReportPage />;
+    case "devices":
+      return <DevicesPage />;
     case "team-create":
       return <TeamCreatePage />;
     case "team-join":

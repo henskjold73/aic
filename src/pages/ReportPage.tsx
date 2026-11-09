@@ -4,7 +4,7 @@ import { useWide } from "@/hooks/useWide";
 import { fetchUsageDays, fetchUsageHistory } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
 import { monthKey } from "@/lib/date";
-import { getSyncUuid } from "@/lib/storage";
+import { getSubject } from "@/lib/session";
 import { backLink, btnPrimary, btnSecondary, card, pageWrap, FONT_STACK } from "@/styles";
 import type { DailyUsageRecord, MonthKey, UsageHistoryRecord } from "@/types";
 
@@ -66,7 +66,7 @@ function percentColor(pct: number | null): string {
 
 /** `/report` — monthly history table plus a per-day breakdown for one month. */
 export function ReportPage(): JSX.Element {
-  const uuid = getSyncUuid();
+  const uuid = getSubject();
   const wide = useWide(520);
 
   const [history, setHistory] = useState<UsageHistoryRecord[] | null>(null);

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiRequestError, fetchSyncPing, fetchUsage, patchBudget } from "@/lib/api";
+import { getSubject } from "@/lib/session";
 import { monthKey } from "@/lib/date";
 import {
   getMonthlyBudgetNumber,
-  getSyncUuid,
   getUsedAiu,
   setUsedAiu as persistUsedAiu,
 } from "@/lib/storage";
@@ -48,7 +48,7 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
   }, []);
 
   const refresh = useCallback((): void => {
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     if (!uuid) return;
 
     fetchUsage(uuid)
@@ -87,7 +87,7 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
 
   // Fetch the last-seen script version from the ping endpoint once on mount.
   useEffect(() => {
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     if (!uuid) return;
     fetchSyncPing(uuid)
       .then((ping) => setSyncVersion(ping.script_version))
@@ -97,7 +97,7 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
   // One-time back-fill: if a budget exists locally but not server-side, push it
   // up so team views can compute this user's daily allowance.
   useEffect(() => {
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     const budget = getMonthlyBudgetNumber();
     if (!uuid || budget === null) return;
 

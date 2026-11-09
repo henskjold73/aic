@@ -14,10 +14,10 @@ import { countWorkdays, daysInMonth, MONTH_NAMES, totalWorkdays } from "@/lib/da
 import { computeInsight } from "@/lib/members";
 import {
   getMonthlyBudget,
-  getSyncUuid,
   removeTeamId,
   setMonthlyBudget as persistMonthlyBudget,
 } from "@/lib/storage";
+import { getAccount, getSubject, hasSyncKey } from "@/lib/session";
 import { FONT_STACK, navBtn, panel } from "@/styles";
 import type { UsageHistoryRecord } from "@/types";
 
@@ -41,7 +41,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const [usageHistory, setUsageHistory] = useState<UsageHistoryRecord[] | null>(null);
 
   useEffect(() => {
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     if (!uuid) return;
     fetchUsageHistory(uuid).then(setUsageHistory).catch(() => {});
   }, []);
@@ -51,13 +51,13 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const onSynced = useCallback(() => teamsRefresh(), [teamsRefresh]);
   const usage = useUsageSync(onSynced);
 
-  const hasSyncUuid = getSyncUuid() !== null;
+  const hasSyncUuid = hasSyncKey();
 
   const handleLeaveTeam = useCallback(
     (teamId: string) => {
       removeTeamId(teamId);
       teamsRefresh();
-      const uuid = getSyncUuid();
+      const uuid = getSubject();
       if (uuid) leaveTeam(teamId, uuid).catch(() => {});
     },
     [teamsRefresh],
@@ -67,7 +67,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
     setMonthlyBudget(value);
     persistMonthlyBudget(value);
 
-    const uuid = getSyncUuid();
+    const uuid = getSubject();
     const parsed = Number.parseFloat(value);
     if (uuid && Number.isFinite(parsed)) {
       patchBudget(uuid, parsed).catch(() => {
@@ -159,6 +159,31 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
         style={{ fontFamily: FONT_STACK, width: "100%", maxWidth: 480, color: COLORS.ink }}
       >
         <TopNav teams={teamsSync.teams} onLeaveTeam={handleLeaveTeam} />
+
+        {(getAccount()?.warnings ?? []).length > 0 && (
+          <a
+            href="/devices"
+            style={{
+              display: "block",
+              background: "#fff6e5",
+              border: `1px solid ${COLORS.warn}`,
+              color: "#7a4b00",
+              borderRadius: 10,
+              padding: "10px 12px",
+              marginBottom: 12,
+              fontSize: "0.78rem",
+              lineHeight: 1.45,
+              textDecoration: "none",
+            }}
+          >
+            <strong>Usage may be counted twice.</strong> Two of your sync keys appear to read
+            the same Copilot data, overstating this month by about{" "}
+            {Math.round(
+              (getAccount()?.warnings ?? []).reduce((sum, w) => sum + w.overstated_aiu, 0),
+            ).toLocaleString()}{" "}
+            AIU. Review devices →
+          </a>
+        )}
 
         {/* Header */}
         <div

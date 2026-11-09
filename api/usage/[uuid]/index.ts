@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { int, iso, num, query, sql, type UsageRow } from "../../db";
+import { ensureSchema, ensureSyncKey, int, legacyKeyApiEnabled, iso, num, query, sql, type UsageRow } from "../../db";
 import { applyCors, errorMessage, fail, isUuid, parseBody, queryParam } from "../../http";
 import type { UsagePatchBody, UsagePostBody, UsageRecord } from "../../../src/types";
 
@@ -34,6 +34,8 @@ export default async function handler(
     } = body;
 
     try {
+      await ensureSchema();
+      await ensureSyncKey(uuid);
       await sql`
         INSERT INTO usage (user_uuid, month, aiu, input_tokens, output_tokens, script_version, updated_at)
         VALUES (${uuid}, ${month}, ${aiu}, ${input_tokens}, ${output_tokens}, ${script_version}, NOW())
@@ -50,6 +52,9 @@ export default async function handler(
     }
     return;
   }
+
+  // Everything below reads or edits by key alone, which is the legacy API.
+  if (!legacyKeyApiEnabled()) return fail(res, 403, "key-only access is turned off — sign in");
 
   if (req.method === "PATCH") {
     const patch = parseBody<UsagePatchBody>(req);

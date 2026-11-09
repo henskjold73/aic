@@ -21,6 +21,6 @@ export default defineConfig({
   define: {
     __BUILD_HASH__: JSON.stringify(hash),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    __CURRENT_SCRIPT_VERSION__: JSON.stringify("1.4.1"),
+    __CURRENT_SCRIPT_VERSION__: JSON.stringify("1.5.0"),
   },
 });

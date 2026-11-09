@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
-import { joinTeam } from "@/lib/api";
+import { ApiRequestError, attachKey, joinTeam } from "@/lib/api";
 import { COLORS, isUuid, syncCommands } from "@/lib/constants";
+import { getAccount, hasSyncKey, signIn } from "@/lib/session";
 import { addTeamId, getSyncUuid, setSyncUuid } from "@/lib/storage";
 import { backLink, btnPrimary, card, inputStyle, monoBlock, pageWrap } from "@/styles";
 import type { Uuid } from "@/types";
@@ -11,11 +12,12 @@ export interface TeamJoinPageProps {
 }
 
 /** Validation and submission outcome for the join form. */
-type JoinStatus = "bad_uuid" | "bad_name" | "error" | "joined" | null;
+type JoinStatus = "bad_uuid" | "bad_name" | "key_taken" | "error" | "joined" | null;
 
 const ERROR_MESSAGES: Record<Exclude<JoinStatus, "joined" | null>, string> = {
   bad_uuid: "Invalid UUID — run the install script to get yours.",
   bad_name: "Please enter your name.",
+  key_taken: "That sync UUID is already linked to a different account.",
   error: "Something went wrong — check the team link is correct.",
 };
 
@@ -30,7 +32,8 @@ const fieldStyle = {
 /** `/team/:id/join` — install instructions plus the name + UUID form. */
 export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
   const [name, setName] = useState<string>("");
-  const [uuid, setUuid] = useState<string>(() => getSyncUuid() ?? "");
+  const account = getAccount();
+  const [uuid, setUuid] = useState<string>(() => (account ? "" : (getSyncUuid() ?? "")));
   const [status, setStatus] = useState<JoinStatus>(null);
   const [teamName, setTeamName] = useState<string>("");
 
@@ -38,7 +41,9 @@ export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
     const trimmedUuid = uuid.trim();
     const trimmedName = name.trim();
 
-    if (!isUuid(trimmedUuid)) {
+    // Signed in with a key already attached, the UUID field can stay empty.
+    const needsUuid = !account || trimmedUuid !== "" || !hasSyncKey();
+    if (needsUuid && !isUuid(trimmedUuid)) {
       setStatus("bad_uuid");
       return;
     }
@@ -48,13 +53,19 @@ export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
     }
 
     try {
-      const result = await joinTeam(teamId, trimmedUuid, trimmedName);
-      setTeamName(result.team_name);
+      if (account) {
+        if (trimmedUuid !== "") await attachKey(trimmedUuid);
+        const result = await joinTeam(teamId, "me", trimmedName);
+        setTeamName(result.team_name);
+      } else {
+        const result = await joinTeam(teamId, trimmedUuid, trimmedName);
+        setTeamName(result.team_name);
+        setSyncUuid(trimmedUuid);
+      }
       setStatus("joined");
-      setSyncUuid(trimmedUuid);
       addTeamId(teamId);
-    } catch {
-      setStatus("error");
+    } catch (err) {
+      setStatus(err instanceof ApiRequestError && err.status === 409 ? "key_taken" : "error");
     }
   }
 
@@ -96,6 +107,21 @@ export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
         <div style={hintStyle}>1. Run in your terminal</div>
         <div style={{ ...monoBlock, marginBottom: 16 }}>{install}</div>
 
+        {!account && (
+          <div style={{ ...hintStyle, marginBottom: 12 }}>
+            <button
+              type="button"
+              onClick={() => signIn(window.location.pathname)}
+              style={{ ...btnPrimary, marginBottom: 6 }}
+            >
+              Sign in with GitHub
+            </button>
+            <div>
+              Optional, but it lets you use the same account on every browser and machine.
+            </div>
+          </div>
+        )}
+
         <div style={hintStyle}>2. Enter your details</div>
         <label style={fieldStyle}>
           Your name
@@ -109,7 +135,9 @@ export function TeamJoinPage({ teamId }: TeamJoinPageProps): JSX.Element {
         <label style={{ ...fieldStyle, marginBottom: 12 }}>
           Sync UUID{" "}
           <span style={{ color: COLORS.faint, fontWeight: 400 }}>
-            (printed by the install script)
+            {account && hasSyncKey()
+              ? "(optional — your account already has a sync key)"
+              : "(printed by the install script)"}
           </span>
           <input
             value={uuid}

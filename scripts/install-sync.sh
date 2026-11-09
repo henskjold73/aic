@@ -70,16 +70,40 @@ else
   echo "[aic] Cron job installed (runs hourly)"
 fi
 
+# Ask the server for a one-time code that links this machine to a signed-in
+# account. Best effort: if it fails we fall back to the plain UUID instructions.
+SITE="https://aic-jade.vercel.app"
+PAIR_RESPONSE=$(curl -s --max-time 15 -X POST "$SITE/api/usage/$UUID/ping" \
+  -H "Content-Type: application/json" \
+  -d '{"request_pair_code":true}' 2>/dev/null || true)
+PAIR_CODE=$(printf '%s' "$PAIR_RESPONSE" | sed -n 's/.*"pair_code":"\([^"]*\)".*/\1/p')
+ALREADY_LINKED=$(printf '%s' "$PAIR_RESPONSE" | grep -c '"linked":true' || true)
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  aic sync installed ✓"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "  Your sync UUID:"
-echo ""
-echo "  $UUID"
-echo ""
-echo "  Paste it at: https://aic-jade.vercel.app/auto"
+if [ -n "$PAIR_CODE" ]; then
+  echo "  Link this machine to your account:"
+  echo ""
+  echo "    1. Sign in at $SITE/devices"
+  echo "    2. Enter this code (valid 15 minutes):"
+  echo ""
+  echo "       $PAIR_CODE"
+  echo ""
+  echo "  Not using an account? Paste your sync UUID at $SITE/auto instead:"
+  echo "  $UUID"
+elif [ "$ALREADY_LINKED" != "0" ]; then
+  echo "  This machine is already linked to your account ✓"
+  echo "  Manage it at $SITE/devices"
+else
+  echo "  Your sync UUID:"
+  echo ""
+  echo "  $UUID"
+  echo ""
+  echo "  Paste it at: $SITE/auto"
+fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

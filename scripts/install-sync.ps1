@@ -46,16 +46,42 @@ $trigger = New-ScheduledTaskTrigger `
 $settings = New-ScheduledTaskSettingsSet -Hidden -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
 Register-ScheduledTask -TaskName "aic-usage-sync" -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
 
+# Ask the server for a one-time code that links this machine to a signed-in
+# account. Best effort: if it fails we fall back to the plain UUID instructions.
+$site = "https://aic-jade.vercel.app"
+$pairCode = $null
+$alreadyLinked = $false
+try {
+    $pair = Invoke-RestMethod -Uri "$site/api/usage/$uuid/ping" -Method POST -Body '{"request_pair_code":true}' -ContentType "application/json" -TimeoutSec 15
+    if ($pair.pair_code) { $pairCode = $pair.pair_code }
+    if ($pair.linked) { $alreadyLinked = $true }
+} catch { }
+
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Write-Host "  aic sync installed"
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Write-Host ""
-Write-Host "  Your sync UUID:"
-Write-Host ""
-Write-Host "  $uuid"
-Write-Host ""
-Write-Host "  Paste it at: https://aic-jade.vercel.app/auto"
+if ($pairCode) {
+    Write-Host "  Link this machine to your account:"
+    Write-Host ""
+    Write-Host "    1. Sign in at $site/devices"
+    Write-Host "    2. Enter this code (valid 15 minutes):"
+    Write-Host ""
+    Write-Host "       $pairCode"
+    Write-Host ""
+    Write-Host "  Not using an account? Paste your sync UUID at $site/auto instead:"
+    Write-Host "  $uuid"
+} elseif ($alreadyLinked) {
+    Write-Host "  This machine is already linked to your account"
+    Write-Host "  Manage it at $site/devices"
+} else {
+    Write-Host "  Your sync UUID:"
+    Write-Host ""
+    Write-Host "  $uuid"
+    Write-Host ""
+    Write-Host "  Paste it at: $site/auto"
+}
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

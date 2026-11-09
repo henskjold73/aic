@@ -18,6 +18,9 @@ export type DateKey = string;
 /** ISO-8601 timestamp string, e.g. `"2026-08-13T09:41:00.000Z"`. */
 export type IsoTimestamp = string;
 
+/** Who an API call is for: a legacy sync UUID, or `"me"` for the signed-in account. */
+export type Subject = Uuid | "me";
+
 /** Month index as used by `Date#getMonth()`: 0 = January … 11 = December. */
 export type MonthIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 
@@ -71,7 +74,28 @@ export interface UsagePostBody {
 
 /** Body accepted by `POST /api/usage/[uuid]/ping`. */
 export interface SyncPingPostBody {
-  script_version: string;
+  /** Required unless `request_pair_code` is set. */
+  script_version?: string;
+  /**
+   * SHA-256 hex of the oldest usage event in the machine's Copilot DB. Two sync
+   * keys with the same fingerprint read the same data (used for duplicate
+   * detection). Absent from scripts older than 1.5.0.
+   */
+  db_fingerprint?: string;
+  /**
+   * Ask for a one-time pairing code (installer only). When set, `script_version`
+   * may be omitted and nothing is recorded in `sync_meta`.
+   */
+  request_pair_code?: boolean;
+}
+
+/** Response of `POST /api/usage/[uuid]/ping`. */
+export interface SyncPingPostResponse {
+  ok: true;
+  /** Present when a code was requested and the key is not yet on a real account. */
+  pair_code?: string;
+  /** True when the key already belongs to a signed-in (non-shadow) account. */
+  linked?: boolean;
 }
 
 /** Response of `GET /api/usage/[uuid]/ping`. */
@@ -91,11 +115,96 @@ export interface DaysPostBody {
   project?: string | null;
 }
 
+// ── Accounts ──────────────────────────────────────────────────────
+
+/** What the UI may show about one of an account's sync keys. The key itself is never returned. */
+export interface AccountKeyInfo {
+  /** Public handle for this key; used to label, disable or dismiss warnings. */
+  id: Uuid;
+  /** Last four characters of the key, to tell keys apart. */
+  hint: string;
+  label: string | null;
+  last_ping_at: IsoTimestamp | null;
+  disabled: boolean;
+}
+
+/** The signed-in account, as returned by `GET /api/me/session`. */
+export interface SessionAccount {
+  id: Uuid;
+  display_name: string | null;
+  keys: AccountKeyInfo[];
+  /** Problems worth surfacing on every page, e.g. double-counted usage. */
+  warnings: AccountWarning[];
+}
+
+/** Two of the account's keys appear to read the same Copilot data. */
+export interface AccountWarning {
+  kind: "duplicate_keys";
+  /** Ids of the two keys involved, sorted. */
+  key_ids: [Uuid, Uuid];
+  /**
+   * `same_database`: both scripts report the same DB fingerprint (certain).
+   * `matching_days`: several closed days have identical totals (likely).
+   */
+  reason: "same_database" | "matching_days";
+  /** AIU this month counted twice, i.e. the smaller key's total. */
+  overstated_aiu: number;
+  month: MonthKey;
+}
+
+/** One sync key on the Devices page. */
+export interface DeviceInfo extends AccountKeyInfo {
+  created_at: IsoTimestamp;
+  script_version: string | null;
+  /** This month's AIU written through this key. */
+  aiu_month: number;
+}
+
+/** Response of `GET /api/me/devices`. */
+export interface DevicesResponse {
+  month: MonthKey;
+  devices: DeviceInfo[];
+  warnings: AccountWarning[];
+}
+
+/** Body accepted by `PATCH /api/me/device`. */
+export interface DevicePatchBody {
+  id: Uuid;
+  label?: string | null;
+  disabled?: boolean;
+}
+
+/** Body accepted by `POST /api/me/pair`. */
+export interface PairBody {
+  code: string;
+}
+
+/** Body accepted by `POST /api/me/dismiss`. */
+export interface DismissBody {
+  key_ids: [Uuid, Uuid];
+}
+
+/** Response of `GET /api/me/session`. `account` is `null` when signed out. */
+export interface SessionResponse {
+  account: SessionAccount | null;
+}
+
+/** Body accepted by `POST /api/me/keys`. */
+export interface AttachKeyBody {
+  key: Uuid;
+}
+
+/** Body accepted by `PATCH /api/me/budget`. */
+export interface BudgetPatchBody {
+  budget: number;
+}
+
 // ── Teams ─────────────────────────────────────────────────────────
 
 /** A team member as returned by `GET /api/team/[id]`. */
 export interface TeamMember {
-  uuid: Uuid;
+  /** The member's account id — a public handle, never a sync key. */
+  id: Uuid;
   name: string;
   joined_at: IsoTimestamp;
   /** `null` when the member has not synced any usage for the current month. */
@@ -123,7 +232,8 @@ export interface TeamCreateBody {
 
 /** Body accepted by `POST /api/team/[id]/join`. */
 export interface TeamJoinBody {
-  uuid: Uuid;
+  /** Sync key to join with. Omit when signed in: the account's oldest key is used. */
+  uuid?: Uuid;
   name: string;
 }
 
@@ -144,7 +254,8 @@ export type TeamListResponse = TeamSummary[];
 
 /** Body accepted by `POST /api/team/[id]/leave`. */
 export interface TeamLeaveBody {
-  uuid: Uuid;
+  /** Sync key to remove. Omit when signed in: every key on the account leaves. */
+  uuid?: Uuid;
 }
 
 /** One day of AIU usage summed across every member of a team. */
@@ -158,7 +269,8 @@ export type TeamDaysResponse = TeamDailyPoint[];
 
 /** One team member's AIU usage for today, returned by `GET /api/team/[id]/today`. */
 export interface TeamTodayMember {
-  uuid: Uuid;
+  /** The member's account id. */
+  id: Uuid;
   name: string;
   /** AIU consumed today; 0 when no data has been synced yet. */
   aiu_today: number;
@@ -192,7 +304,7 @@ export function isApiError<T extends object>(value: ApiResult<T>): value is ApiE
  * level, guaranteed to have a usage record for the month being viewed.
  */
 export interface FlatMember {
-  uuid: Uuid;
+  id: Uuid;
   name: string;
   joined_at: IsoTimestamp;
   usage: UsageRecord;

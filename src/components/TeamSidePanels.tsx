@@ -72,7 +72,7 @@ export function TeamSidePanels({
   const enriched = enrichMembers(members, today);
   const topUser = sortByUsage(enriched)[0];
   const closestToBudget = sortByBudgetProximity(enriched)[0];
-  const enrichedByUuid = new Map(enriched.map((m) => [m.uuid, m]));
+  const enrichedById = new Map(enriched.map((m) => [m.id, m]));
   const todayTop3 = (todayLeaderboard ?? []).filter((m) => m.aiu_today > 0).slice(0, 3);
 
   const totalWd = totalWorkdays(today.getFullYear(), today.getMonth());
@@ -157,7 +157,7 @@ export function TeamSidePanels({
             Top today
           </div>
           {todayTop3.map((m, i) => {
-            const em = enrichedByUuid.get(m.uuid);
+            const em = enrichedById.get(m.id);
             const remainingBudget =
               em?.budget != null ? em.budget - em.aiu : null;
             const allowedToday =
@@ -169,7 +169,7 @@ export function TeamSidePanels({
             const color = ratio !== null ? todayColor(ratio) : COLORS.primary;
             return (
               <div
-                key={m.uuid}
+                key={m.id}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
