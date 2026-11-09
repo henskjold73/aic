@@ -21,7 +21,7 @@ export interface TeamSidePanelsProps {
 
 const panelBase: CSSProperties = {
   background: COLORS.surface,
-  borderRadius: 10,
+  borderRadius: 2,
   padding: "12px 14px",
   border: `1px solid ${COLORS.border}`,
   display: "flex",
@@ -113,7 +113,7 @@ export function TeamSidePanels({
       <div style={panelName}>{closestToBudget.name}</div>
       <div style={panelValue(budgetColor)}>{closestToBudget.actualPerDay.toFixed(1)}</div>
       <div style={{ color: COLORS.faint }}>AIU/day actual</div>
-      <div style={{ marginTop: 4, color: "#bbb", fontSize: "0.65rem" }}>
+      <div style={{ marginTop: 4, color: COLORS.faint, fontSize: "0.65rem" }}>
         budget {closestToBudget.allowedPerDay.toFixed(1)}/day
       </div>
     </>

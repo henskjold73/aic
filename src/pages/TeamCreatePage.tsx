@@ -65,7 +65,7 @@ export function TeamCreatePage(): JSX.Element {
           <div
             style={{
               background: COLORS.page,
-              borderRadius: 10,
+              borderRadius: 2,
               padding: "12px 14px",
               marginBottom: 20,
             }}
@@ -143,11 +143,11 @@ export function TeamCreatePage(): JSX.Element {
             <div
               style={{
                 background: COLORS.page,
-                borderRadius: 8,
+                borderRadius: 2,
                 padding: "10px 12px",
                 fontFamily: "monospace",
                 fontSize: "0.75rem",
-                color: "#333",
+                color: COLORS.ink,
                 wordBreak: "break-all",
                 marginBottom: 12,
               }}

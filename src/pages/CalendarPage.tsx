@@ -9,7 +9,7 @@ import { useTeamsSync } from "@/hooks/useTeamSync";
 import { useUsageSync } from "@/hooks/useUsageSync";
 import { useWide } from "@/hooks/useWide";
 import { fetchUsageHistory, leaveTeam, patchBudget } from "@/lib/api";
-import { COLORS } from "@/lib/constants";
+import { COLORS, VIEWPORT_HEIGHT } from "@/lib/constants";
 import { countWorkdays, daysInMonth, MONTH_NAMES, totalWorkdays } from "@/lib/date";
 import { computeInsight } from "@/lib/members";
 import {
@@ -18,7 +18,7 @@ import {
   setMonthlyBudget as persistMonthlyBudget,
 } from "@/lib/storage";
 import { getAccount, getSubject, hasSyncKey } from "@/lib/session";
-import { FONT_STACK, navBtn, panel } from "@/styles";
+import { FONT_STACK, navBtn, panel, statusTrack } from "@/styles";
 import type { UsageHistoryRecord } from "@/types";
 
 export interface CalendarPageProps {
@@ -156,7 +156,8 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   return (
     <div
       style={{
-        minHeight: "100vh",
+        boxSizing: "border-box",
+        minHeight: VIEWPORT_HEIGHT,
         background: COLORS.page,
         display: "flex",
         alignItems: "flex-start",
@@ -175,10 +176,10 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
             href="/devices"
             style={{
               display: "block",
-              background: "#fff6e5",
+              background: COLORS.warnBg,
               border: `1px solid ${COLORS.warn}`,
-              color: "#7a4b00",
-              borderRadius: 10,
+              color: COLORS.warnText,
+              borderRadius: 2,
               padding: "10px 12px",
               marginBottom: 12,
               fontSize: "0.78rem",
@@ -219,7 +220,7 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
         <div
           style={{
             fontSize: "0.75rem",
-            color: "#888",
+            color: COLORS.muted,
             display: "flex",
             justifyContent: "space-between",
             marginBottom: 4,
@@ -233,20 +234,13 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
           </span>
         </div>
         <div
-          style={{
-            background: COLORS.tint,
-            borderRadius: 8,
-            height: 7,
-            marginBottom: 18,
-            overflow: "hidden",
-          }}
+          style={{ ...statusTrack(10), marginBottom: 18 }}
         >
           <div
             style={{
               width: `${pctElapsed}%`,
               height: "100%",
-              background: `linear-gradient(90deg,${COLORS.primary},${COLORS.primaryLight})`,
-              borderRadius: 8,
+              background: COLORS.primary,
               transition: "width 0.3s",
             }}
           />

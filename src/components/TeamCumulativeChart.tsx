@@ -96,7 +96,7 @@ export function TeamCumulativeChart({
       : "";
 
   return (
-    <div style={{ marginTop: 10, borderTop: "1px solid #f0f1ff", paddingTop: 10 }}>
+    <div style={{ marginTop: 10, borderTop: `1px solid ${COLORS.inner}`, paddingTop: 10 }}>
       <svg
         width="100%"
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
@@ -138,7 +138,7 @@ export function TeamCumulativeChart({
           display: "flex",
           justifyContent: "space-between",
           fontSize: "0.6rem",
-          color: "#bbb",
+          color: COLORS.faint,
           marginTop: 3,
         }}
       >

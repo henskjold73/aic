@@ -240,7 +240,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                       key={m.id}
                       style={{
                         background: COLORS.surface,
-                        borderRadius: 10,
+                        borderRadius: 2,
                         padding: "10px 14px",
                         border: `1px solid ${COLORS.border}`,
                         display: "flex",
@@ -253,7 +253,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
                           style={{
                             width: 24,
                             height: 24,
-                            borderRadius: "50%",
+                            borderRadius: 2,
                             background: color,
                             display: "flex",
                             alignItems: "center",
@@ -287,7 +287,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
         <div
           style={{
             background: COLORS.surface,
-            borderRadius: 10,
+            borderRadius: 2,
             padding: "10px 14px",
             border: `1px solid ${COLORS.border}`,
             marginBottom: 12,
@@ -358,7 +358,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
         <div
           style={{
             background: COLORS.page,
-            borderRadius: 10,
+            borderRadius: 2,
             padding: "10px 14px",
             border: `1px solid ${COLORS.border}`,
           }}
@@ -371,7 +371,7 @@ export function TeamViewPage({ teamId }: TeamViewPageProps): JSX.Element {
               style={{
                 fontFamily: "monospace",
                 fontSize: "0.7rem",
-                color: "#555",
+                color: COLORS.muted,
                 flex: 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",

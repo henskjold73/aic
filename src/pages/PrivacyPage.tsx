@@ -6,16 +6,16 @@ const mono: CSSProperties = {
   fontFamily: "monospace",
   fontSize: "0.78rem",
   background: COLORS.page,
-  borderRadius: 6,
+  borderRadius: 2,
   padding: "8px 10px",
-  color: "#444",
+  color: COLORS.muted,
   wordBreak: "break-all",
   marginBottom: 4,
 };
 
 const paragraph: CSSProperties = {
   fontSize: "0.82rem",
-  color: "#555",
+  color: COLORS.muted,
   lineHeight: 1.6,
   margin: "0 0 8px",
 };
@@ -168,9 +168,9 @@ export function PrivacyPage(): JSX.Element {
             marginTop: 20,
             padding: "10px 14px",
             background: COLORS.page,
-            borderRadius: 8,
+            borderRadius: 2,
             fontSize: "0.75rem",
-            color: "#888",
+            color: COLORS.muted,
           }}
         >
           Or run the uninstall script which does all of the above automatically — see the

@@ -120,13 +120,13 @@ export function DevicesPage(): JSX.Element {
       <div
         key={`${idA}-${idB}`}
         style={{
-          background: "#fff6e5",
+          background: COLORS.warnBg,
           border: `1px solid ${COLORS.warn}`,
-          borderRadius: 10,
+          borderRadius: 2,
           padding: "10px 12px",
           marginBottom: 8,
           fontSize: "0.78rem",
-          color: "#7a4b00",
+          color: COLORS.warnText,
           lineHeight: 1.45,
         }}
       >
@@ -252,7 +252,7 @@ function DeviceRowView({ device, busy, onRename, onToggle }: DeviceRowViewProps)
     <div
       style={{
         border: `1px solid ${COLORS.border}`,
-        borderRadius: 10,
+        borderRadius: 2,
         padding: "10px 12px",
         marginBottom: 8,
         opacity: device.disabled ? 0.55 : 1,

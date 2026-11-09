@@ -4,7 +4,7 @@ import { useWide } from "@/hooks/useWide";
 import { fetchUsageDays, fetchUsageHistory } from "@/lib/api";
 import { COLORS } from "@/lib/constants";
 import { monthKey } from "@/lib/date";
-import { getSubject } from "@/lib/session";
+import { getSubject, signIn } from "@/lib/session";
 import { backLink, btnPrimary, btnSecondary, card, pageWrap, FONT_STACK } from "@/styles";
 import type { DailyUsageRecord, MonthKey, UsageHistoryRecord } from "@/types";
 
@@ -25,9 +25,9 @@ const th: CSSProperties = {
 const thRight: CSSProperties = { ...th, textAlign: "right" };
 const td: CSSProperties = {
   fontSize: "0.8rem",
-  color: "#333",
+  color: COLORS.ink,
   padding: "7px 10px",
-  borderBottom: "1px solid #f0f1ff",
+  borderBottom: `1px solid ${COLORS.inner}`,
 };
 const tdRight: CSSProperties = {
   ...td,
@@ -42,7 +42,7 @@ const emptyState: CSSProperties = {
 };
 const sectionCard: CSSProperties = {
   background: COLORS.surface,
-  borderRadius: 12,
+  borderRadius: 2,
   border: `1px solid ${COLORS.border}`,
   overflow: "hidden",
 };
@@ -164,21 +164,18 @@ export function ReportPage(): JSX.Element {
     return (
       <div style={pageWrap}>
         <div style={card}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>No sync UUID found</div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Nothing to report yet</div>
           <div style={{ fontSize: "0.8rem", color: COLORS.muted, marginBottom: 16 }}>
-            Set up auto-sync first to see your report.
+            Sign in to see your usage report, or set up auto-sync first.
           </div>
-          <a
-            href="/"
-            style={{
-              ...btnPrimary,
-              display: "block",
-              textAlign: "center",
-              textDecoration: "none",
-            }}
-          >
-            Back
-          </a>
+          <button onClick={() => signIn("/report")} style={btnPrimary}>
+            Sign in with GitHub
+          </button>
+          <div style={{ marginTop: 12 }}>
+            <a href="/" style={backLink}>
+              Back
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -211,7 +208,7 @@ export function ReportPage(): JSX.Element {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 14px",
-              borderBottom: "1px solid #f0f1ff",
+              borderBottom: `1px solid ${COLORS.inner}`,
             }}
           >
             <div style={{ fontSize: "0.85rem", fontWeight: 700 }}>Monthly History</div>
@@ -301,7 +298,7 @@ export function ReportPage(): JSX.Element {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 14px",
-              borderBottom: "1px solid #f0f1ff",
+              borderBottom: `1px solid ${COLORS.inner}`,
               flexWrap: "wrap",
               gap: 8,
             }}
@@ -316,11 +313,11 @@ export function ReportPage(): JSX.Element {
                   onChange={(event) => setSelectedProject(event.target.value)}
                   style={{
                     fontSize: "0.75rem",
-                    border: "1px solid #dde0f5",
-                    borderRadius: 6,
+                    border: `1px solid ${COLORS.inner}`,
+                    borderRadius: 2,
                     padding: "4px 8px",
-                    background: "#f7f8ff",
-                    color: "#333",
+                    background: COLORS.page,
+                    color: COLORS.ink,
                   }}
                 >
                   <option value={ALL_PROJECTS}>All projects</option>

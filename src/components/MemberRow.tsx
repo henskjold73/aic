@@ -2,6 +2,7 @@ import { useState, type JSX, type ReactNode } from "react";
 import { DailyUsageChart } from "@/components/DailyUsageChart";
 import { LiveAgo } from "@/components/LiveAgo";
 import { COLORS, offsetColor } from "@/lib/constants";
+import { statusTrack } from "@/styles";
 import type { EnrichedMember, MonthKey } from "@/types";
 
 export interface MemberRowProps {
@@ -38,13 +39,7 @@ function BudgetBar({ ratio }: { ratio: number }): JSX.Element {
   const filledPct = Math.min((ratio / 2) * 100, 100);
   return (
     <div
-      style={{
-        position: "relative",
-        background: COLORS.tint,
-        borderRadius: 6,
-        height: 6,
-        overflow: "visible",
-      }}
+      style={{ ...statusTrack(10), position: "relative", overflow: "visible" }}
     >
       {BUDGET_TICKS.map((tick) => (
         <div
@@ -52,9 +47,9 @@ function BudgetBar({ ratio }: { ratio: number }): JSX.Element {
           style={{
             position: "absolute",
             left: tick.left,
-            top: -1,
+            top: -2,
             width: 2,
-            height: 8,
+            height: 12,
             background: tick.color,
             borderRadius: 1,
             zIndex: 1,
@@ -67,7 +62,6 @@ function BudgetBar({ ratio }: { ratio: number }): JSX.Element {
           width: `${filledPct}%`,
           height: "100%",
           background: offsetColor(ratio),
-          borderRadius: 6,
           transition: "width 0.3s",
         }}
       />
@@ -86,19 +80,13 @@ function UsageBar({
 }): JSX.Element {
   return (
     <div
-      style={{
-        background: COLORS.tint,
-        borderRadius: 6,
-        height: 5,
-        overflow: "hidden",
-      }}
+      style={statusTrack(8)}
     >
       <div
         style={{
           width: `${(aiu / maxAiu) * 100}%`,
           height: "100%",
-          background: `linear-gradient(90deg,${accent},${accent}99)`,
-          borderRadius: 6,
+          background: accent,
         }}
       />
     </div>
@@ -143,9 +131,10 @@ export function MemberRow({
     <div
       style={{
         background: COLORS.surface,
-        borderRadius: 10,
+        borderRadius: 2,
         padding: "12px 14px",
-        border: `1px solid ${expanded ? "#c8d0f8" : COLORS.border}`,
+        border: `1px solid ${COLORS.border}`,
+        boxShadow: `inset 0 0 0 1px ${expanded ? COLORS.primary : COLORS.inner}`,
         cursor: "pointer",
         transition: "border-color 0.15s",
       }}
@@ -164,7 +153,7 @@ export function MemberRow({
             style={{
               width: 24,
               height: 24,
-              borderRadius: "50%",
+              borderRadius: 2,
               background: accent,
               display: "flex",
               alignItems: "center",
@@ -185,7 +174,7 @@ export function MemberRow({
             </div>
             {sub && <div style={{ fontSize: "0.65rem", color: COLORS.faint }}>{sub}</div>}
           </div>
-          <div style={{ fontSize: "0.65rem", color: "#bbb", userSelect: "none" }}>
+          <div style={{ fontSize: "0.65rem", color: COLORS.faint, userSelect: "none" }}>
             {expanded ? "▲" : "▼"}
           </div>
         </div>

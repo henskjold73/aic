@@ -1,7 +1,7 @@
 import type { ChangeEvent, JSX } from "react";
 import { LiveAgo } from "@/components/LiveAgo";
 import { COLORS, formatCompactNumber } from "@/lib/constants";
-import { inputStyle, panel, statBox } from "@/styles";
+import { inputStyle, panel, statBox, statusTrack } from "@/styles";
 import type { AicInsight, SyncStatus, UsageRecord } from "@/types";
 
 export interface AicPanelProps {
@@ -136,13 +136,13 @@ export function AicPanel({
       {scriptOutdated && (
         <div
           style={{
-            background: "#fff8e6",
-            border: "1px solid #f5d97a",
-            borderRadius: 8,
+            background: COLORS.warnBg,
+            border: `1px solid ${COLORS.warn}`,
+            borderRadius: 2,
             padding: "8px 12px",
             marginBottom: 10,
             fontSize: "0.75rem",
-            color: "#7a5c00",
+            color: COLORS.warnText,
           }}
         >
           Your sync script is out of date (v{effectiveVersion} →{" "}
@@ -157,13 +157,13 @@ export function AicPanel({
             gap: 8,
             marginBottom: 12,
             fontSize: "0.7rem",
-            color: "#888",
+            color: COLORS.muted,
           }}
         >
           <div style={statBox}>
             <div>Input tokens</div>
             <div
-              style={{ fontWeight: 700, color: "#333" }}
+              style={{ fontWeight: 700, color: COLORS.ink }}
               title={usage.input_tokens.toLocaleString()}
             >
               {formatCompactNumber(usage.input_tokens)}
@@ -172,7 +172,7 @@ export function AicPanel({
           <div style={statBox}>
             <div>Output tokens</div>
             <div
-              style={{ fontWeight: 700, color: "#333" }}
+              style={{ fontWeight: 700, color: COLORS.ink }}
               title={usage.output_tokens.toLocaleString()}
             >
               {formatCompactNumber(usage.output_tokens)}
@@ -180,7 +180,7 @@ export function AicPanel({
           </div>
           <div style={statBox}>
             <div>Last synced</div>
-            <div style={{ fontWeight: 700, color: "#333" }}>
+            <div style={{ fontWeight: 700, color: COLORS.ink }}>
               <LiveAgo iso={usage.updated_at} />
             </div>
           </div>
@@ -215,7 +215,7 @@ function BurnSummary({ insight, monthlyBudget, usedAiu }: BurnSummaryProps): JSX
           display: "flex",
           justifyContent: "space-between",
           fontSize: "0.72rem",
-          color: "#888",
+          color: COLORS.muted,
           marginBottom: 3,
         }}
       >
@@ -227,20 +227,13 @@ function BurnSummary({ insight, monthlyBudget, usedAiu }: BurnSummaryProps): JSX
       </div>
 
       <div
-        style={{
-          background: COLORS.border,
-          borderRadius: 8,
-          height: 7,
-          marginBottom: 10,
-          overflow: "hidden",
-        }}
+        style={{ ...statusTrack(12), marginBottom: 10 }}
       >
         <div
           style={{
             width: `${barPct}%`,
             height: "100%",
             background: color,
-            borderRadius: 8,
             transition: "width 0.3s",
           }}
         />
@@ -261,7 +254,7 @@ function BurnSummary({ insight, monthlyBudget, usedAiu }: BurnSummaryProps): JSX
       >
         <div style={statBox}>
           <div>Daily burn</div>
-          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#333" }}>
+          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: COLORS.ink }}>
             {insight.dailyBurnRate.toFixed(1)}
           </div>
         </div>
@@ -271,7 +264,7 @@ function BurnSummary({ insight, monthlyBudget, usedAiu }: BurnSummaryProps): JSX
             style={{
               fontSize: "0.95rem",
               fontWeight: 700,
-              color: insight.overBudget ? COLORS.bad : "#333",
+              color: insight.overBudget ? COLORS.bad : COLORS.ink,
             }}
           >
             {insight.projected.toFixed(0)}

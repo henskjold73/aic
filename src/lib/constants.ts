@@ -7,20 +7,43 @@ export function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_RE.test(value);
 }
 
+/**
+ * Whole-UI scale, applied as a root CSS `zoom` in `main.tsx` — the same effect
+ * as browser zoom, so px sizes scale too. Anything that compares against the
+ * viewport (breakpoints, `vh`) must divide by this; see `useWide` and `VIEWPORT_HEIGHT`.
+ */
+export const UI_ZOOM = 1.25;
+
+/** `100vh` expressed for zoomed content: a zoomed box of this height fills the window exactly. */
+export const VIEWPORT_HEIGHT = `${(100 / UI_ZOOM).toFixed(3)}vh`;
+
 /** Semantic palette used across charts, bars and status text. */
 export const COLORS = {
-  primary: "#4f6ef7",
-  primaryLight: "#7b8ff7",
-  good: "#3ab87a",
-  warn: "#e0953a",
-  bad: "#e05252",
-  ink: "#1a1a2e",
-  muted: "#666",
-  faint: "#aaa",
-  surface: "#fff",
-  page: "#f4f5fb",
-  tint: "#eef0ff",
-  border: "#e8eaff",
+  /** ElvUI "value colour" — links, active values, focus borders. */
+  primary: "#1784d1",
+  primaryLight: "#4da3e6",
+  good: "#3fbf6b",
+  warn: "#e3a72f",
+  bad: "#d9483f",
+  /** Body text. */
+  ink: "#e6e6e6",
+  muted: "#a3a3a3",
+  faint: "#808080",
+  /** Panel / card background (ElvUI's flat charcoal backdrop). */
+  surface: "#161616",
+  /** Window background behind the panels. */
+  page: "#0c0c0c",
+  /** Fields, hovered rows, empty bar tracks. */
+  tint: "#1f1f1f",
+  /** Outer 1px border: pure black, as in ElvUI. */
+  border: "#000",
+  /** Inner 1px highlight drawn inside the black border for the double-edge look. */
+  inner: "#2c2c2c",
+  /** Tinted fills for warnings and destructive actions. */
+  warnBg: "rgba(227,167,47,0.12)",
+  warnText: "#f0c46a",
+  badBg: "rgba(217,72,63,0.14)",
+  primaryBg: "rgba(23,132,209,0.18)",
 } as const;
 
 export type ColorName = keyof typeof COLORS;

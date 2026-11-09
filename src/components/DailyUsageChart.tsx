@@ -39,7 +39,7 @@ const placeholderStyle = {
 /** Pick a bar colour from how far the day's usage sits above the daily budget. */
 function barColor(aiu: number, dailyBudget: number | null, isToday: boolean): string {
   if (isToday) return COLORS.primary;
-  if (!aiu) return "#eef0ff";
+  if (!aiu) return COLORS.tint;
   if (dailyBudget == null) return COLORS.primary;
   if (aiu > dailyBudget * 1.3) return COLORS.bad;
   if (aiu > dailyBudget * 1.1) return "#c4acf7";
@@ -123,7 +123,7 @@ export function DailyUsageBars({ days, budget, month }: DailyUsageBarsProps): JS
           display: "flex",
           justifyContent: "space-between",
           fontSize: "0.6rem",
-          color: "#bbb",
+          color: COLORS.faint,
           marginTop: 3,
         }}
       >
@@ -158,7 +158,7 @@ export function DailyUsageChart({ teamId, memberId, budget, month }: DailyUsageC
   if (days === null) return <div style={placeholderStyle}>Loading…</div>;
 
   return (
-    <div style={{ marginTop: 10, borderTop: "1px solid #f0f1ff", paddingTop: 10 }}>
+    <div style={{ marginTop: 10, borderTop: `1px solid ${COLORS.inner}`, paddingTop: 10 }}>
       <DailyUsageBars days={days} budget={budget} month={month} />
     </div>
   );

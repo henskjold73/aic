@@ -77,14 +77,14 @@ export function CalendarGrid({
           marginBottom: 4,
         }}
       >
-        {WEEKDAY_LABELS.map((label, index) => (
+        {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
             style={{
               textAlign: "center",
               fontSize: "0.68rem",
               fontWeight: 600,
-              color: index >= 5 ? "#ccc" : COLORS.faint,
+              color: COLORS.faint,
               textTransform: "uppercase",
               padding: "2px 0",
             }}
@@ -103,17 +103,19 @@ export function CalendarGrid({
           const isRunOut =
             runOutDay !== null && day === runOutDay && runOutDay <= totalDays;
 
-          let background = weekend ? "#fafafa" : "#f7f8ff";
-          let border = weekend ? "1px solid #f0f0f0" : `1px solid ${COLORS.border}`;
-          let numberColor = weekend ? "#bbb" : "#222";
+          // Weekend cells recede; workdays get the ElvUI double edge (black outer,
+          // grey inner). Today lights the inner edge in the accent colour.
+          let background: string = weekend ? COLORS.page : COLORS.surface;
+          let edgeColor: string = weekend ? "#161616" : COLORS.inner;
+          let numberColor: string = weekend ? COLORS.faint : COLORS.ink;
 
           if (isRunOut && !isToday) {
-            background = "#fff5f5";
-            border = `2px solid ${COLORS.bad}`;
+            background = COLORS.badBg;
+            edgeColor = COLORS.bad;
           }
           if (isToday) {
-            background = COLORS.primary;
-            border = `1px solid ${COLORS.primary}`;
+            background = COLORS.primaryBg;
+            edgeColor = COLORS.primary;
             numberColor = "#fff";
           }
 
@@ -143,8 +145,9 @@ export function CalendarGrid({
               key={day}
               style={{
                 background,
-                border,
-                borderRadius: wide ? 9 : 7,
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: `inset 0 0 0 1px ${edgeColor}`,
+                borderRadius: 2,
                 minHeight: wide ? 60 : 56,
                 display: "flex",
                 flexDirection: "column",
@@ -169,7 +172,7 @@ export function CalendarGrid({
                   style={{
                     fontSize: "0.58rem",
                     fontWeight: 500,
-                    color: isToday ? "rgba(255,255,255,0.7)" : COLORS.faint,
+                    color: isToday ? COLORS.primaryLight : COLORS.faint,
                     lineHeight: 1,
                   }}
                 >

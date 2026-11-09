@@ -39,7 +39,12 @@ const accountName: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-const plainBtn: CSSProperties = { background: "transparent", border: "none", fontSize: "inherit" };
+const plainBtn: CSSProperties = {
+  background: "transparent",
+  border: "none",
+  fontSize: "inherit",
+  fontFamily: "inherit",
+};
 
 const group: CSSProperties = {
   display: "flex",
@@ -54,11 +59,13 @@ const navLink: CSSProperties = {
   gap: 4,
   color: COLORS.faint,
   textDecoration: "none",
-  fontWeight: 600,
+  fontWeight: 700,
   padding: "4px 6px",
-  borderRadius: 6,
+  borderRadius: 2,
   cursor: "pointer",
-  transition: "background 0.15s, color 0.15s",
+  textTransform: "uppercase",
+  letterSpacing: 0.4,
+  transition: "color 0.15s",
 };
 
 const pill: CSSProperties = {
@@ -66,9 +73,12 @@ const pill: CSSProperties = {
   alignItems: "center",
   gap: 4,
   background: COLORS.tint,
-  borderRadius: 20,
-  padding: "3px 4px 3px 10px",
-  transition: "background 0.15s",
+  border: `1px solid ${COLORS.border}`,
+  boxShadow: `inset 0 0 0 1px ${COLORS.inner}`,
+  borderRadius: 2,
+  padding: "2px 4px 2px 9px",
+  textTransform: "uppercase",
+  letterSpacing: 0.3,
 };
 
 const pillLink: CSSProperties = {
@@ -89,7 +99,7 @@ const leaveBtn: CSSProperties = {
   width: 16,
   height: 16,
   border: "none",
-  borderRadius: "50%",
+  borderRadius: 2,
   background: "transparent",
   color: COLORS.faint,
   cursor: "pointer",
@@ -104,8 +114,8 @@ const leaveBtn: CSSProperties = {
  * can't express `:hover`, so this is the one bit of real CSS in the file.
  */
 const hoverStyles = `
-  .aic-nav-link:hover { background: ${COLORS.tint}; color: ${COLORS.primary}; }
-  .aic-pill:hover { background: #e3e6ff; }
+  .aic-nav-link:hover { color: ${COLORS.primary}; }
+  .aic-pill:hover { box-shadow: inset 0 0 0 1px ${COLORS.primary}; }
   .aic-leave-btn:hover { background: ${COLORS.bad}; color: #fff; }
 `;
 

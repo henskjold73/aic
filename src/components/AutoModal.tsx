@@ -68,7 +68,7 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(20,20,40,0.55)",
+        background: "rgba(0,0,0,0.75)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -79,11 +79,12 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
       <div
         style={{
           background: COLORS.surface,
-          borderRadius: 14,
+          borderRadius: 2,
           padding: "28px 24px",
           width: "100%",
           maxWidth: 420,
-          boxShadow: "0 8px 40px rgba(79,110,247,0.15)",
+          border: `1px solid ${COLORS.border}`,
+          boxShadow: `inset 0 0 0 1px ${COLORS.inner}`,
         }}
       >
         <div
@@ -124,12 +125,15 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
               style={{
                 width: "100%",
                 padding: "8px 0",
-                background: COLORS.ink,
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontWeight: 600,
+                background: COLORS.tint,
+                color: COLORS.ink,
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: `inset 0 0 0 1px ${COLORS.inner}`,
+                borderRadius: 2,
+                fontWeight: 700,
                 fontSize: "0.85rem",
+                textTransform: "uppercase",
+                letterSpacing: 0.3,
                 cursor: "pointer",
               }}
             >
@@ -181,12 +185,15 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
             style={{
               flex: 1,
               padding: "8px 0",
-              background: COLORS.primary,
+              background: COLORS.primaryBg,
               color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontWeight: 600,
+              border: `1px solid ${COLORS.border}`,
+              boxShadow: `inset 0 0 0 1px ${COLORS.primary}`,
+              borderRadius: 2,
+              fontWeight: 700,
               fontSize: "0.85rem",
+              textTransform: "uppercase",
+              letterSpacing: 0.3,
               cursor: "pointer",
             }}
           >
@@ -197,12 +204,15 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
               onClick={clear}
               style={{
                 padding: "8px 14px",
-                background: "#fee",
+                background: COLORS.badBg,
                 color: COLORS.bad,
-                border: "1px solid #fcc",
-                borderRadius: 8,
-                fontWeight: 600,
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: `inset 0 0 0 1px ${COLORS.bad}`,
+                borderRadius: 2,
+                fontWeight: 700,
                 fontSize: "0.85rem",
+                textTransform: "uppercase",
+                letterSpacing: 0.3,
                 cursor: "pointer",
               }}
             >
@@ -214,11 +224,14 @@ export function AutoModal({ onClose }: AutoModalProps): JSX.Element {
             style={{
               padding: "8px 14px",
               background: COLORS.tint,
-              color: "#555",
-              border: "none",
-              borderRadius: 8,
-              fontWeight: 600,
+              color: COLORS.muted,
+              border: `1px solid ${COLORS.border}`,
+              boxShadow: `inset 0 0 0 1px ${COLORS.inner}`,
+              borderRadius: 2,
+              fontWeight: 700,
               fontSize: "0.85rem",
+              textTransform: "uppercase",
+              letterSpacing: 0.3,
               cursor: "pointer",
             }}
           >
