@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiRequestError, fetchSyncPing, fetchUsage, patchBudget } from "@/lib/api";
+import { ApiRequestError, fetchSyncPing, fetchUsage } from "@/lib/api";
 import { getSubject } from "@/lib/session";
 import { monthKey } from "@/lib/date";
-import {
-  getMonthlyBudgetNumber,
-  getUsedAiu,
-  setUsedAiu as persistUsedAiu,
-} from "@/lib/storage";
+import { getUsedAiu, setUsedAiu as persistUsedAiu } from "@/lib/storage";
 import type { SyncStatus, UsageRecord } from "@/types";
 
 /** Background refresh interval for the signed-in user's own usage. */
@@ -92,23 +88,6 @@ export function useUsageSync(onSynced?: () => void): UsageSync {
     fetchSyncPing(uuid)
       .then((ping) => setSyncVersion(ping.script_version))
       .catch(() => { /* no ping recorded yet — leave null */ });
-  }, []);
-
-  // One-time back-fill: if a budget exists locally but not server-side, push it
-  // up so team views can compute this user's daily allowance.
-  useEffect(() => {
-    const uuid = getSubject();
-    const budget = getMonthlyBudgetNumber();
-    if (!uuid || budget === null) return;
-
-    fetchUsage(uuid)
-      .then((record) => {
-        if (record.budget == null) return patchBudget(uuid, budget);
-        return undefined;
-      })
-      .catch(() => {
-        /* nothing synced yet — the next PATCH from the budget field will cover it */
-      });
   }, []);
 
   return { usage, status, usedAiu, setUsedAiu, refresh, syncVersion };

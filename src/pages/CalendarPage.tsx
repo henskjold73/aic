@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { AicPanel } from "@/components/AicPanel";
 import { AutoModal } from "@/components/AutoModal";
+import { BudgetModal } from "@/components/BudgetModal";
 import { BuildStamp } from "@/components/BuildStamp";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import { TeamSidePanels } from "@/components/TeamSidePanels";
@@ -14,6 +15,7 @@ import { countWorkdays, daysInMonth, MONTH_NAMES, totalWorkdays } from "@/lib/da
 import { computeInsight } from "@/lib/members";
 import {
   getMonthlyBudget,
+  getMonthlyBudgetNumber,
   removeTeamId,
   setMonthlyBudget as persistMonthlyBudget,
 } from "@/lib/storage";
@@ -51,15 +53,37 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
   const onSynced = useCallback(() => teamsRefresh(), [teamsRefresh]);
   const usage = useUsageSync(onSynced);
 
-  // A new browser has no local budget, but the account already has one on the
-  // server — adopt it so the budget follows the user across devices.
+  // Reconcile the budget between this browser and the server.
+  //  - server has one, browser doesn't: adopt it (budget follows the user across devices)
+  //  - browser has one, server doesn't: push it back up so team views have it
+  //  - neither has one: ask the user to confirm it
   const serverBudget = usage.usage?.budget ?? null;
+  const [showBudgetModal, setShowBudgetModal] = useState<boolean>(false);
+  const budgetReconciled = useRef<boolean>(false);
   useEffect(() => {
-    if (serverBudget === null || getMonthlyBudget() !== "") return;
-    const value = String(serverBudget);
-    setMonthlyBudget(value);
-    persistMonthlyBudget(value);
-  }, [serverBudget]);
+    // Only decide once the server has answered; `null` status means unknown.
+    if (usage.status !== "ok") return;
+    if (serverBudget !== null) {
+      if (getMonthlyBudget() === "") {
+        const value = String(serverBudget);
+        setMonthlyBudget(value);
+        persistMonthlyBudget(value);
+      }
+      return;
+    }
+    if (budgetReconciled.current) return;
+    const uuid = getSubject();
+    if (!uuid) return;
+    budgetReconciled.current = true;
+    const local = getMonthlyBudgetNumber();
+    if (local !== null) {
+      patchBudget(uuid, local).catch(() => {
+        budgetReconciled.current = false; // allow a retry if the effect re-runs
+      });
+    } else {
+      setShowBudgetModal(true);
+    }
+  }, [usage.status, serverBudget]);
 
   const hasSyncUuid = hasSyncKey();
 
@@ -317,6 +341,16 @@ export function CalendarPage({ openSyncModal = false }: CalendarPageProps): JSX.
           members={teamsWithMembers[0].members!}
           todayLeaderboard={teamsWithMembers[0].todayLeaderboard}
           today={today}
+        />
+      )}
+
+      {showBudgetModal && (
+        <BudgetModal
+          onConfirm={(value) => {
+            updateMonthlyBudget(value);
+            setShowBudgetModal(false);
+          }}
+          onClose={() => setShowBudgetModal(false)}
         />
       )}
 
